@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Görev Zamanlayıcı v2.3</title>
+<style>
+  :root { --bg:#0b0c10; --card:#121318; --text:#f5f7fb; --muted:#aab3c5; --accent:#4f8cff; --danger:#ff5c5c; --ok:#22c55e;}
+  *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  body{margin:0;background:var(--bg);color:var(--text)}
+  .container{max-width:980px;margin:0 auto;padding:16px}
+  .tabs{display:flex;gap:8px;margin-bottom:12px}
+  .tab{flex:1;text-align:center;padding:12px;border-radius:12px;background:#1a1c24;color:var(--muted);cursor:pointer;border:1px solid #222}
+  .tab.active{background:var(--card);color:var(--text);border-color:#2b2f3a}
+  .card{background:var(--card);border:1px solid #2b2f3a;border-radius:16px;padding:16px}
+  .row{display:flex;gap:8px;align-items:center}
+  input[type=text]{flex:1;padding:10px;border-radius:10px;border:1px solid #2b2f3a;background:#0f1015;color:var(--text)}
+  button{padding:8px 12px;border-radius:10px;border:1px solid #2b2f3a;background:#1a1c24;color:var(--text);cursor:pointer}
+  button.primary{background:var(--accent);border-color:#2a6fe6;color:#fff}
+  button.danger{background:var(--danger);border-color:#b03434;color:#fff}
+  button.ghost{background:#1a1c24}
+  .list{list-style:none;margin:0;padding:0}
+  .item{padding:10px;border:1px solid #2b2f3a;border-radius:10px;margin-top:8px;background:#12141b}
+  .item-header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .badge{font-size:12px;color:#fff;background:#2b2f3a;padding:4px 8px;border-radius:999px}
+  .hint{color:var(--muted);font-size:13px;margin-top:8px}
+  .timer{font-size:64px;font-weight:700;letter-spacing:2px;text-align:center;margin:8px 0}
+  .task-title{font-size:18px;text-align:center;margin:10px 0 2px}
+  .sub{font-size:13px;color:var(--muted);text-align:center;margin:0 0 12px}
+  .center{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+  .ok{color:var(--ok)}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="tabs">
+    <div id="tabSettings" class="tab active">Ayarlar</div>
+    <div id="tabRun" class="tab">Başlat</div>
+  </div>
+  <div id="viewSettings" class="card">
+    <h2 style="margin:0 0 10px">Kategoriler ve Görevler</h2>
+    <div class="row">
+      <input id="catInput" type="text" placeholder="Yeni kategori adı..." />
+      <button class="primary" id="btnAddCat">+ Kategori Ekle</button>
+    </div>
+    <p class="hint">Kategoriler sıralanabilir, kategori içi görevler eklenip sıralanabilir. Veriler cihazınızda saklanır.</p>
+    <ul id="catList" class="list"></ul>
+  </div>
+  <div id="viewRun" class="card" style="display:none">
+    <h2>Sırayla Oynat</h2>
+    <div id="runEmpty" class="hint">Kategori ve görev ekleyin.</div>
+    <div id="runArea" style="display:none">
+      <div class="badge" id="badgePos">1 / 1</div>
+      <div class="task-title" id="currentTitle">—</div>
+      <p class="sub">Her görev: <b>30 saniye</b></p>
+      <div class="timer" id="timer">00:30</div>
+      <div class="center">
+        <button class="primary" id="btnStart">Başlat</button>
+        <button class="ghost" id="btnPause" disabled>Duraklat</button>
+        <button class="ghost" id="btnSkip">Atla ⏭️</button>
+        <button class="danger" id="btnReset">Sıfırla</button>
+      </div>
+      <p id="doneMsg" class="hint" style="display:none"><span class="ok">Tüm görevler tamamlandı.</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- Uyarı sesi (kısa beep) -->
+<audio id="beep" preload="auto">
+  <source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
+</audio>
+
+<script>
+  // --- Depo
+  const KEY='mobiroller_categories_v1';
+  const load=()=>JSON.parse(localStorage.getItem(KEY)||'[]');
+  const save=(d)=>localStorage.setItem(KEY,JSON.stringify(d));
+
+  // --- Sekmeler
+  const tabSettings=document.getElementById('tabSettings'), tabRun=document.getElementById('tabRun');
+  const viewSettings=document.getElementById('viewSettings'), viewRun=document.getElementById('viewRun');
+  function showSettings(){tabSettings.classList.add('active');tabRun.classList.remove('active');viewSettings.style.display='block';viewRun.style.display='none';}
+  function showRun(){tabRun.classList.add('active');tabSettings.classList.remove('active');viewSettings.style.display='none';viewRun.style.display='block';prepareRun();}
+  tabSettings.onclick=showSettings; tabRun.onclick=showRun;
+
+  // --- Ayarlar (Kategori/Görev)
+  const catInput=document.getElementById('catInput'), btnAddCat=document.getElementById('btnAddCat'), catList=document.getElementById('catList');
+
+  function escapeHtml(s){
+    const map={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+    return String(s).replace(/[&<>"']/g,ch=>map[ch]);
+  }
+
+  function renderCats(){
+    const data=load();
+    catList.innerHTML='';
+    data.forEach((cat,ci)=>{
+      const li=document.createElement('li'); li.className='item';
+      li.innerHTML=`
+        <div class="item-header">
+          <div><span class="badge">#${ci+1}</span> <span class="cat-name">${escapeHtml(cat.name)}</span></div>
+          <div>
+            <button data-cup="${ci}">↑</button>
+            <button data-cdown="${ci}">↓</button>
+            <button data-cedit="${ci}">Yeniden Adlandır</button>
+            <button class="danger" data-cdel="${ci}">Sil</button>
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <input data-tinput="${ci}" type="text" placeholder="Bu kategoriye görev ekle..." />
+          <button class="primary" data-tadd="${ci}">+ Görev</button>
+        </div>
+        <div class="hint">Görevler</div>
+        <div data-tlist="${ci}"></div>
+      `;
+      catList.appendChild(li);
+      renderTasksFor(ci);
+    });
+  }
+
+  function renderTasksFor(ci){
+    const data=load();
+    const wrap=catList.querySelector(`[data-tlist="${ci}"]`);
+    wrap.innerHTML='';
+    const tasks=data[ci]?.tasks||[];
+    tasks.forEach((t,ti)=>{
+      const row=document.createElement('div');
+      row.className='task';
+      row.innerHTML=`
+        <div class="task-left"><span class="badge">${ti+1}</span><span>${escapeHtml(t)}</span></div>
+        <div>
+          <button data-tup="${ci},${ti}">↑</button>
+          <button data-tdown="${ci},${ti}">↓</button>
+          <button class="danger" data-tdel="${ci},${ti}">🗑</button>
+        </div>`;
+      wrap.appendChild(row);
+    });
+  }
+
+  btnAddCat.onclick=()=>{
+    const v=catInput.value.trim(); if(!v) return;
+    const data=load(); data.push({name:v,tasks:[]}); save(data); catInput.value=''; renderCats();
+  };
+
+  catList.onclick=(e)=>{
+    const t=e.target;
+    const cup=t.getAttribute('data-cup'), cdown=t.getAttribute('data-cdown'),
+          cdel=t.getAttribute('data-cdel'), cedit=t.getAttribute('data-cedit');
+    if(cup!==null){ const i=+cup; if(i>0){ const d=load(); [d[i-1],d[i]]=[d[i],d[i-1]]; save(d); renderCats(); } return; }
+    if(cdown!==null){ const i=+cdown; const d=load(); if(i<d.length-1){ [d[i+1],d[i]]=[d[i],d[i+1]]; save(d); renderCats(); } return; }
+    if(cdel!==null){ const i=+cdel; const d=load(); d.splice(i,1); save(d); renderCats(); return; }
+    if(cedit!==null){ const i=+cedit; const d=load(); const nv=prompt('Kategori adı:', d[i].name); if(nv!==null){ d[i].name=nv.trim()||d[i].name; save(d); renderCats(); } return; }
+
+    const tadd=t.getAttribute('data-tadd');
+    if(tadd!==null){ const i=+tadd; const inp=catList.querySelector(`[data-tinput="${i}"]`); const v=inp.value.trim(); if(!v) return;
+      const d=load(); d[i].tasks.push(v); save(d); inp.value=''; renderTasksFor(i); return; }
+
+    const tup=t.getAttribute('data-tup'), tdown=t.getAttribute('data-tdown'), tdel=t.getAttribute('data-tdel');
+    if(tup!==null){ const [ci,ti]=tup.split(',').map(Number); const d=load(); if(ti>0){ [d[ci].tasks[ti-1],d[ci].tasks[ti]]=[d[ci].tasks[ti],d[ci].tasks[ti-1]]; save(d); renderTasksFor(ci);} return; }
+    if(tdown!==null){ const [ci,ti]=tdown.split(',').map(Number); const d=load(); if(ti<d[ci].tasks.length-1){ [d[ci].tasks[ti+1],d[ci].tasks[ti]]=[d[ci].tasks[ti],d[ci].tasks[ti+1]]; save(d); renderTasksFor(ci);} return; }
+    if(tdel!==null){ const [ci,ti]=tdel.split(',').map(Number); const d=load(); d[ci].tasks.splice(ti,1); save(d); renderTasksFor(ci); return; }
+  };
+
+  // --- Çalıştır (3 bip)
+  const beep=document.getElementById('beep');
+  const runEmpty=document.getElementById('runEmpty'), runArea=document.getElementById('runArea'), doneMsg=document.getElementById('doneMsg');
+  const badgePos=document.getElementById('badgePos'), currentTitle=document.getElementById('currentTitle'), timerEl=document.getElementById('timer');
+  const btnStart=document.getElementById('btnStart'), btnPause=document.getElementById('btnPause'), btnSkip=document.getElementById('btnSkip'), btnReset=document.getElementById('btnReset');
+  const DURATION=30; let flat=[],idx=0,remaining=DURATION,timerId=null,paused=false;
+
+  function rebuildFlat(){
+    const d=load(); flat=[];
+    d.forEach((c)=> (c.tasks||[]).forEach(t=> flat.push(c.name+' • '+t)));
+  }
+
+  function prepareRun(){
+    rebuildFlat();
+    if(flat.length===0){runEmpty.style.display='block';runArea.style.display='none';return;}
+    runEmpty.style.display='none';runArea.style.display='block';doneMsg.style.display='none';
+    if(idx>=flat.length) idx=0;
+    remaining=DURATION; updateTimer(); showTask();
+    stop(true); // buton durumlarını sıfırla
+  }
+
+  function showTask(){
+    badgePos.textContent=`${idx+1} / ${flat.length}`;
+    currentTitle.textContent=flat[idx];
+    updateTimer();
+    btnStart.disabled=false; btnPause.disabled=true; paused=false;
+  }
+
+  function updateTimer(){ timerEl.textContent='00:'+String(remaining).padStart(2,'0'); }
+
+  function tick(){ if(paused) return; remaining--; if(remaining<=0){ playTripleBeep(); advance(); } else { updateTimer(); } }
+
+  function start(){ if(timerId) return; btnStart.disabled=true; btnPause.disabled=false; paused=false; timerId=setInterval(tick,1000); }
+  function pause(){ if(!timerId) return; paused=!paused; btnPause.textContent=paused?'Devam':'Duraklat'; }
+  function stop(keep=false){ clearInterval(timerId); timerId=null; btnPause.textContent='Duraklat'; btnPause.disabled=true; if(!keep) btnStart.disabled=false; }
+
+  function playTripleBeep(){
+    // Kullanıcı etkileşimi (Başlat) gerçekleştiği için çalınır.
+    const times=3, interval=400;
+    for(let i=0;i<times;i++){
+      setTimeout(()=>{ try{ beep.currentTime=0; beep.play(); }catch(e){} }, i*interval);
+    }
+  }
+
+  function advance(){
+    stop();
+    idx++;
+    if(idx>=flat.length){
+      doneMsg.style.display='block';
+      idx=flat.length-1;
+      remaining=0; updateTimer();
+      badgePos.textContent=`${flat.length} / ${flat.length}`;
+      currentTitle.textContent='Tebrikler!';
+      return;
+    }
+    remaining=DURATION; updateTimer(); showTask(); // otomatik başlatma yok
+  }
+
+  btnStart.onclick=start; btnPause.onclick=pause; btnSkip.onclick=advance; btnReset.onclick=()=>{ stop(); idx=0; prepareRun(); };
+
+  // İlk yükleme
+  renderCats();
+</script>
+</body>
+</html>
