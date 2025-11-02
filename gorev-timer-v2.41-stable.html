@@ -1,0 +1,1975 @@
+<html lang="tr"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Görev Zamanlayıcı v2.41 — Stabil</title>
+<style>
+:root { --bg:#0b0c10; --card:#121318; --text:#f5f7fb; --muted:#aab3c5; --accent:#4f8cff; --danger:#ff5c5c; --ok:#22c55e; --line:#2b2f3a; --warn:#fbbf24;}
+*{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text)}
+.container{max-width:1100px;margin:0 auto;padding:16px}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tab{flex:1;text-align:center;padding:12px;border-radius:12px;background:#1a1c24;color:var(--muted);cursor:pointer;border:1px solid #222}
+.tab.active{background:var(--card);color:var(--text);border-color:var(--line)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.row{display:flex;gap:8px;align-items:center}
+input[type=text],input[type=number],textarea,select{flex:1;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0f1015;color:var(--text)}
+textarea{min-height:64px;resize:vertical}
+button{padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:#1a1c24;color:var(--text);cursor:pointer}
+button.primary{background:var(--accent);border-color:#2a6fe6;color:#fff}
+button.danger{background:var(--danger);border-color:#b03434;color:#fff}
+.list{list-style:none;margin:0;padding:0}
+.item{padding:10px;border:1px solid var(--line);border-radius:10px;margin-top:8px;background:#12141b}
+.item-header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{font-size:12px;color:#fff;background:#2b2f3a;padding:4px 8px;border-radius:999px}
+.hint{color:var(--muted);font-size:13px;margin-top:8px}
+.pill{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid #2b2f3a;background:#0f1015}
+.switch{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#151824}
+.ring{width:120px;height:120px;margin:6px auto;border-radius:999px;background:conic-gradient(var(--accent) 0deg, #2b2f3a 0deg);display:flex;align-items:center;justify-content:center}
+.ring span{font-size:28px;font-weight:700}
+.bar{height:14px;background:#0f1015;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.fill{height:100%;background:linear-gradient(90deg,var(--accent),#7aa7ff)}
+dialog{border:none;border-radius:16px;padding:0;max-width:920px;width:96%}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}
+.kv-stem{font-size:26px;line-height:1.25;text-align:center;margin:10px 0 6px}
+.kv-media{display:flex;flex-direction:column;align-items:center;gap:6px;margin:8px auto}
+.kv-img{max-width:640px;max-height:320px;border-radius:12px;border:1px solid var(--line);display:none}
+.kv-audio{width:100%;max-width:640px;display:none}
+.kv-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:720px;margin:0 auto}
+.kv-opts button{justify-content:flex-start;gap:8px;display:flex;align-items:center}
+.opt-correct{outline:2px solid var(--ok)}
+.opt-wrong{outline:2px solid var(--danger)}
+.wheel-result{margin-top:10px;border-top:1px dashed var(--line);padding-top:16px;display:none;text-align:center}
+.countdown{height:10px;background:#0f1015;border:1px solid var(--line);border-radius:999px;overflow:hidden;max-width:360px;margin:8px auto 0}
+.countdown > div{height:100%;width:100%;background:linear-gradient(90deg,var(--warn), #f59e0b)}
+.small{font-size:12px;color:var(--muted)}
+.task-grid{display:grid;grid-template-columns:1.2fr 0.6fr 0.6fr 1fr;gap:8px}
+.task-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.task-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.task-row{border:1px dashed var(--line);border-radius:10px;padding:10px;margin-top:8px}
+.task-title{font-weight:700}
+.task-meta{color:var(--muted);font-size:13px}
+.reward-meta{margin-top:8px;text-align:center}
+.reward-meta .line{margin:2px 0}
+
+/* --- injected: numbering + drag handle for task rows (non-breaking) --- */
+.task-num{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;
+  border-radius:8px;background:#1a1c24;border:1px solid var(--line);font-weight:700;margin-right:8px}
+.task-row{position:relative}
+.task-row .drag-handle{cursor:grab;user-select:none;margin-right:8px}
+.task-row.dragging{opacity:.6;outline:2px dashed var(--accent)}
+
+
+/* --- injected: iki oyuncu skor tablosu (D/Y) --- */
+.kv-board{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 0 0}
+.kv-card{background:#121318;border:1px solid var(--line);border-radius:12px;padding:10px}
+.kv-board h4{margin:0 0 6px 0;font-size:14px;color:#cdd3e0}
+.kv-table{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:14px}
+.kv-table td{padding:6px 10px;background:#0f1015;border:1px solid var(--line)}
+.kv-table td:first-child{border-radius:8px 0 0 8px}
+.kv-table td:last-child{border-radius:0 8px 8px 0;text-align:right}
+.kv-pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #2b2f3a;background:#0f1015;font-size:12px;color:#aab3c5}
+.kv-log{max-height:160px;overflow:auto;border-top:1px dashed var(--line);margin-top:8px;padding-top:6px;font-size:12px;color:#aab3c5}
+.kv-ok{color:#22c55e}
+.kv-no{color:#ff6b6b}
+
+</style>
+
+<!-- === THEME: Fiery Couples === -->
+<style>
+  body::before{
+    content:"";
+    position:fixed; inset:0; z-index:-1;
+    background: radial-gradient(1200px 600px at 20% -10%, rgba(255,90,0,.25), transparent 60%),
+                radial-gradient(900px 600px at 80% 110%, rgba(255,0,90,.18), transparent 55%),
+                radial-gradient(600px 400px at 30% 80%, rgba(255,150,0,.12), transparent 60%);
+    animation: flamePulse 6s ease-in-out infinite alternate;
+    filter: blur(8px);
+  }
+  @keyframes flamePulse{ 0%{transform:scale(1);opacity:.8} 100%{transform:scale(1.03);opacity:1} }
+  :root{
+    --bg:#0a0709; --card:#141018; --text:#fff5f5; --muted:#e9c9c9;
+    --accent:#ff6a00; --danger:#ff1744; --ok:#36d399; --line:#2a1b22; --warn:#ff9f1a;
+    --lvl-hafif:#6ee7b7; --lvl-orta:#ffd166; --lvl-sicak:#ff6a00; --lvl-alev:#ff1744;
+  }
+  button{ border-color:#3a2632; background:#1b141c; color:#fff; transition:all .2s ease }
+  button.primary{ background: linear-gradient(90deg,#ff6a00,#ff2d55); border-color:#662020 }
+  button.primary:hover{ transform: translateY(-1px); box-shadow:0 8px 24px rgba(255,77,0,.35) }
+  .card{ background: rgba(20,16,24,.92); border-color:#2a1b22; backdrop-filter: blur(3px) }
+  .fill{ background: linear-gradient(90deg,#ff6a00,#ff2d55) }
+  .lvl-badge{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:12px;border:1px solid #3a2632;background:#160f13}
+  .lvl-dot{width:8px;height:8px;border-radius:50%}
+  #rewardDone::before,#rewardSkip::before{ content:"🔥"; margin-right:6px }
+  @keyframes firePulse {0%{box-shadow:0 0 0 rgba(255,77,0,0)} 50%{box-shadow:0 0 80px rgba(255,77,0,.25)} 100%{box-shadow:0 0 0 rgba(255,77,0,0)}}
+  @keyframes shakeXY {0%{transform:translate(0,0) rotate(0)} 20%{transform:translate(2px,-2px) rotate(-.5deg)} 40%{transform:translate(-2px,1px) rotate(.6deg)} 60%{transform:translate(1px,2px) rotate(-.4deg)} 80%{transform:translate(-1px,-1px) rotate(.3deg)} 100%{transform:translate(0,0) rotate(0)}}
+  .flame-shake{ animation: shakeXY .7s ease, firePulse 1.2s ease }
+</style>
+<!-- === /THEME === -->
+</head>
+<body>
+<div class="container">
+  <div class="tabs">
+    <div id="tabSettings" class="tab active">Ayarlar</div>
+    <div id="tabRun" class="tab">Başlat</div>
+  </div>
+
+  <div id="viewSettings" class="card">
+    <div class="row" style="justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px">
+      <h2 style="margin:0">Kategoriler ve Görevler</h2>
+      <div class="row" style="gap:6px;flex-wrap:wrap">
+        <button id="btnExportHtml" class="primary">💾 Yedekli HTML indir</button>
+        <button id="btnExportTasks" class="pill">📦 Görevleri Dışa Aktar (JSON)</button>
+        <button id="btnImportTasks" class="pill">📥 Görevleri İçe Aktar (JSON)</button>
+        <input id="importTasksInput" type="file" accept=".json" style="display:none">
+        <button id="btnImportFile">📥 Dosyadan Yükle (HTML/JSON)</button>
+        <input id="importInput" type="file" accept=".html,.htm,.json" style="display:none">
+        <button id="btnRoundRobin" class="switch">Her Kategoriden 1 Görev (RR): Kapalı</button>
+        <button id="btnShuffleCats" class="switch">Kategori Sırası: Sabit</button>
+        <button id="btnSeq" class="switch">Sıralı İlerleme: Açık</button>
+        <button id="btnResetDone" class="danger">Tamamlananları Sıfırla</button>
+      </div>
+    </div>
+
+    <div class="row" style="flex-wrap:wrap">
+      <input id="catInput" type="text" placeholder="Yeni kategori adı...">
+      <button class="primary" id="btnAddCat">+ Kategori Ekle</button>
+    </div>
+    <p class="hint">Her kategoride <b>Görev Pozisyonu</b> ve <b>Görev Talimatı</b> alanları var. <b>Kategori içi görev sıralaması</b> Sabit/Karışık olarak seçilebilir.</p>
+    <ul id="catList" class="list"><li class="item">
+      <div class="item-header">
+        <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="text" value="Vücudun Dili: Keşif" data-ci="0" class="cat-name">
+          <div class="row" style="gap:6px;align-items:center">
+            <span class="small">Kategori içi görev sıralaması</span>
+            <select class="cat-order" data-ci="0">
+              <option value="fixed">Sabit</option>
+              <option value="shuffle" selected="">Karışık</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="danger cat-del" data-ci="0">Sil</button>
+        </div>
+      </div>
+      <div class="task-form">
+        <div class="task-grid">
+          <input type="text" placeholder="Görev Başlığı" class="t-title" data-ci="0">
+          <select class="t-gender" data-ci="0"><option value="">Cinsiyet (opsiyonel)</option><option value="K">Kadın</option><option value="E">Erkek</option></select>
+          <input type="number" min="5" max="900" value="30" class="t-duration" data-ci="0" placeholder="Süre (sn)">
+          <input type="text" placeholder="Görsel URL (opsiyonel)" class="t-img" data-ci="0">
+        </div>
+        <div class="task-grid-2">
+          <input type="text" placeholder="Görev Pozisyonu" class="t-position" data-ci="0">
+          <textarea placeholder="Görev Talimatı" class="t-instruction" data-ci="0"></textarea>
+        </div>
+        <div class="task-actions">
+          <button class="primary t-add" data-ci="0">+ Görev Ekle</button>
+        </div>
+      </div>
+      <div class="task-list" id="task-list-0"><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Sırt Masaj</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Ayakta, Erkek Kadının arkasında.</div>
+          <div class="task-meta">Talimat: Kadının sırtını (kıyafetli) iki avucuyla dairesel hareketlerle yoğurur.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="0">✓ Tamamlandı</button>
+          <button class="edit" data-ti="0">Düzenle</button>
+          <button class="danger del" data-ti="0">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">El Ele Keşif</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: Yüz yüze oturma.</div>
+          <div class="task-meta">Talimat: Erkeğin sağ elini alır ve parmak uçlarıyla avuç içine baskı uygulayarak okşar.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="1">✓ Tamamlandı</button>
+          <button class="edit" data-ti="1">Düzenle</button>
+          <button class="danger del" data-ti="1">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">El Ele Keşif</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Yüz yüze oturma</div>
+          <div class="task-meta">Talimat: Kadının sol elini alır ve parmak uçlarıyla avuç içine baskı uygulayarak okşar.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="2">✓ Tamamlandı</button>
+          <button class="edit" data-ti="2">Düzenle</button>
+          <button class="danger del" data-ti="2">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Dudak Yakınlaşması</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: Yüz yüze, alınlar temas halinde</div>
+          <div class="task-meta">Talimat: Göz teması kurarak erkeğin dudaklarına çok yavaşça yaklaşır (temas etmeden) ve bu en yakın mesafede kalır.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="3">✓ Tamamlandı</button>
+          <button class="edit" data-ti="3">Düzenle</button>
+          <button class="danger del" data-ti="3">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Derin Öpücük</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Ayakta veya oturarak</div>
+          <div class="task-meta">Talimat: Kadını dudaklarından yavaşça ve derinlemesine öper. (Vücutlar kıyafetli kalır.)</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="4">✓ Tamamlandı</button>
+          <button class="edit" data-ti="4">Düzenle</button>
+          <button class="danger del" data-ti="4">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Sınırlı Temas</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: Yüz yüze ayakta</div>
+          <div class="task-meta">Talimat: Ellerini erkeğin penis bölgesine (kıyafetli) koyar, hafifçe kavrar ve bu teması korur.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="5">✓ Tamamlandı</button>
+          <button class="edit" data-ti="5">Düzenle</button>
+          <button class="danger del" data-ti="5">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Göğüs Teması</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Yüz yüze ayakta</div>
+          <div class="task-meta">Talimat: Kadını duvara yaslar.Ellerini kadının göğüslerinin (kıyafetli) üzerine koyar, hafifçe bastırır ve bu teması korur.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="6">✓ Tamamlandı</button>
+          <button class="edit" data-ti="6">Düzenle</button>
+          <button class="danger del" data-ti="6">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Uyluk Gerilimi</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: Yan yana oturma</div>
+          <div class="task-meta">Talimat: Elini erkeğin iç uyluk bölgesine (kıyafetli) koyar ve yavaşça yukarı-aşağı hareketlerle okşar.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="7">✓ Tamamlandı</button>
+          <button class="edit" data-ti="7">Düzenle</button>
+          <button class="danger del" data-ti="7">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Duvara Pres (Sürtünme)</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Kadın duvara yaslanır, Erkek önünde.</div>
+          <div class="task-meta">Talimat: Erkek, pelvis bölgesini kadının kasık/kalça bölgesine yaslar ve çok yavaş, ritmik sürtünme hareketleri yapar.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="8">✓ Tamamlandı</button>
+          <button class="edit" data-ti="8">Düzenle</button>
+          <button class="danger del" data-ti="8">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">(Erkek Baskısı)</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Kadın eğilmiş, Erkek arkasında.</div>
+          <div class="task-meta">Talimat: Erkek, vücut ağırlığını kadının kalçasına vererek sıkı temas kurar.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="9">✓ Tamamlandı</button>
+          <button class="edit" data-ti="9">Düzenle</button>
+          <button class="danger del" data-ti="9">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Kucakta Pres</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: Kadın, erkeğin kucağına oturur.</div>
+          <div class="task-meta">Talimat: Kalçasını erkeğin kasık bölgesine getirir ve küçük, ritmik baskılar uygular.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="10">✓ Tamamlandı</button>
+          <button class="edit" data-ti="10">Düzenle</button>
+          <button class="danger del" data-ti="10">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Kalça Kavrama</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Ayakta, Erkek Kadının arkasında.</div>
+          <div class="task-meta">Talimat: Kadının kalçalarını (kıyafetli) iki eliyle sıkıca kavrar ve hafifçe sıkar.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="11">✓ Tamamlandı</button>
+          <button class="edit" data-ti="11">Düzenle</button>
+          <button class="danger del" data-ti="11">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Boyun Koklama</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: Ayakta, Kadın erkeğin yanında.</div>
+          <div class="task-meta">Talimat: Erkeğin boyun bölgesine (kıyafetli) yüzünü yaklaştırır, derin nefeslerle kokusunu içine çeker.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="12">✓ Tamamlandı</button>
+          <button class="edit" data-ti="12">Düzenle</button>
+          <button class="danger del" data-ti="12">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Dudaklara Üfleme</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Yüz yüze, dudaklar çok yakın.</div>
+          <div class="task-meta">Talimat: Konuşmak yerine, derin bir nefesi yavaşça kadının dudaklarına üfler.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="13">✓ Tamamlandı</button>
+          <button class="edit" data-ti="13">Düzenle</button>
+          <button class="danger del" data-ti="13">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Ters Kucaklama</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Kadın kucağa, yüzü dışarı bakacak şekilde.</div>
+          <div class="task-meta">Talimat: Ellerini kadının kıyafetli kasık bölgesine (ön taraftan) koyar ve parmak uçlarıyla baskı uygular.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="14">✓ Tamamlandı</button>
+          <button class="edit" data-ti="14">Düzenle</button>
+          <button class="danger del" data-ti="14">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Kucakta Baskı</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: adın, erkeğin kucağına (yüz yüze) oturur.</div>
+          <div class="task-meta">Talimat: Kalçalarıyla erkeğin kasık bölgesine sabit ve kuvvetli baskı uygular.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="15">✓ Tamamlandı</button>
+          <button class="edit" data-ti="15">Düzenle</button>
+          <button class="danger del" data-ti="15">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Yan Yan Sarılma</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Yan yana ayakta, Erkek Kadını yan taraftan sarmalar.</div>
+          <div class="task-meta">Talimat: Elini kadının kıyafetli karnına koyar ve nefesini kadının boynuna üfleyerek yakınlığı korur.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="16">✓ Tamamlandı</button>
+          <button class="edit" data-ti="16">Düzenle</button>
+          <button class="danger del" data-ti="16">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Diz Çökme Teması</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: Kadın ayakta, Erkek önünde diz çöker.</div>
+          <div class="task-meta">Talimat: Kadın, kasık bölgesini (kıyafetli) erkeğin yüzüne yaklaştırır ve bu mesafede kalır.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="17">✓ Tamamlandı</button>
+          <button class="edit" data-ti="17">Düzenle</button>
+          <button class="danger del" data-ti="17">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Duvar Baskısı</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Kadın duvara yaslanır, Erkek önünde.</div>
+          <div class="task-meta">Talimat: Kadının belini sıkıca tutar ve tüm vücut ağırlığını kullanarak kadını duvara presler.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="18">✓ Tamamlandı</button>
+          <button class="edit" data-ti="18">Düzenle</button>
+          <button class="danger del" data-ti="18">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Bacak Kilidi (Oturma)</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: Yüz yüze oturma.</div>
+          <div class="task-meta">Talimat: Bacaklarını erkeğin beline/kalçasına sarar ve kilitler. Vücutların alt kısımlarını birbirine bastırır.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="19">✓ Tamamlandı</button>
+          <button class="edit" data-ti="19">Düzenle</button>
+          <button class="danger del" data-ti="19">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Dairesel Baskı</div>
+          <div class="task-meta">Süre: 30 sn • Genel</div>
+          <div class="task-meta">Pozisyon: Erkek sırtüstü yatar. Kadın, erkeğin üzerine, yüzü ayaklarına bakacak şekilde (ters) oturur. Böylece kadının kasık bölgesi erkeğin yüzüne, erkeğin kasık bölgesi kadının sırtına bakmış olur.</div>
+          <div class="task-meta">Talimat: 1. Kadın: Elini erkeğin kıyafetli kasık bölgesine koyar ve dairesel masaj baskısı uygular. 2. Erkek: Elini kadının kıyafetli kasık bölgesine koyar (kıyafetli kalça üzerinden) ve aynı şekilde dairesel masaj baskısı uygular.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="20">✓ Tamamlandı</button>
+          <button class="edit" data-ti="20">Düzenle</button>
+          <button class="danger del" data-ti="20">Sil</button>
+        </div>
+      </div>
+    </div></div>
+    </li><li class="item">
+      <div class="item-header">
+        <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="text" value="Tenin İzleri" data-ci="1" class="cat-name">
+          <div class="row" style="gap:6px;align-items:center">
+            <span class="small">Kategori içi görev sıralaması</span>
+            <select class="cat-order" data-ci="1">
+              <option value="fixed" selected="">Sabit</option>
+              <option value="shuffle">Karışık</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="danger cat-del" data-ci="1">Sil</button>
+        </div>
+      </div>
+      <div class="task-form">
+        <div class="task-grid">
+          <input type="text" placeholder="Görev Başlığı" class="t-title" data-ci="1">
+          <select class="t-gender" data-ci="1"><option value="">Cinsiyet (opsiyonel)</option><option value="K">Kadın</option><option value="E">Erkek</option></select>
+          <input type="number" min="5" max="900" value="30" class="t-duration" data-ci="1" placeholder="Süre (sn)">
+          <input type="text" placeholder="Görsel URL (opsiyonel)" class="t-img" data-ci="1">
+        </div>
+        <div class="task-grid-2">
+          <input type="text" placeholder="Görev Pozisyonu" class="t-position" data-ci="1">
+          <textarea placeholder="Görev Talimatı" class="t-instruction" data-ci="1"></textarea>
+        </div>
+        <div class="task-actions">
+          <button class="primary t-add" data-ci="1">+ Görev Ekle</button>
+        </div>
+      </div>
+      <div class="task-list" id="task-list-1"><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Omuzdan Sıyrılma</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: Ayakta yüz yüze.</div>
+          <div class="task-meta">Talimat: Erkeğin T-shirt'ü omuz hizasına kadar sıyrılır.Kadın, dudaklarını erkeğin çıplak omuz ve köprücük kemiği arasına yaslar ve nemli, ritmik öpücük/sürtünme uygular. T-shirt çıkar.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="0">✓ Tamamlandı</button>
+          <button class="edit" data-ti="0">Düzenle</button>
+          <button class="danger del" data-ti="0">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Üst Vücut Serbest</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Ayakta sıkı kucaklaşma.</div>
+          <div class="task-meta">Talimat: Kadının T-shirt'ü tamamen çıkarılır.Erkek, çıplak göğsünü kadının Sütyenli göğsüne bastırır ve kalçalarını ritmik dairesel hareketlerle sürter.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="1">✓ Tamamlandı</button>
+          <button class="edit" data-ti="1">Düzenle</button>
+          <button class="danger del" data-ti="1">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Boxer Fırlatma</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: Ayakta, Kadın yüzünü erkeğin çıplak kasık bölgesine yakın tutar.</div>
+          <div class="task-meta">Talimat: Erkeğin  Boxer'ı aynı anda tamamen çıkarılır.Kadın, çıplak penisi elleriyle sarar ve 30 saniye boyunca avucunun içinde ritmik olarak sıkar.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="2">✓ Tamamlandı</button>
+          <button class="edit" data-ti="2">Düzenle</button>
+          <button class="danger del" data-ti="2">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Göğüs Serbest (Sütyen)</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Kadın yatar, Erkek üzerinde</div>
+          <div class="task-meta">Talimat: Kadının Sütyeni tamamen çıkarılır.Erkek, ellerini kadının çıplak göğüslerine koyar ve meme uçlarına odaklanarak, güçlü masaj yapar.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="3">✓ Tamamlandı</button>
+          <button class="edit" data-ti="3">Düzenle</button>
+          <button class="danger del" data-ti="3">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Kasık Açığa Çıkış</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: Ayakta, Kadın önünde diz çöker.</div>
+          <div class="task-meta">Talimat: Kadın, penis bölgesini dudakları ve dili ile 30 saniye boyunca yavaşça okşar.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="4">✓ Tamamlandı</button>
+          <button class="edit" data-ti="4">Düzenle</button>
+          <button class="danger del" data-ti="4">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Brezilya Tutuşu (Şort)</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Ayakta, Erkek arkadan sarılır.</div>
+          <div class="task-meta">Talimat: Kadının Şortunu dizlerine kadar indirir.Erkek, elini kadının iç uyluğuna (çıplak tene) yerleştirir ve vajina girişine doğru sabit, güçlü bir baskı uygular.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="5">✓ Tamamlandı</button>
+          <button class="edit" data-ti="5">Düzenle</button>
+          <button class="danger del" data-ti="5">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Göğüs Arası</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: Kadın yatar, Erkek üzerinde eğik durur</div>
+          <div class="task-meta">Talimat: Kadın, erkeğin çıplak penisini çıplak göğüsleri arasına alır ve penisi göğüsleri ile sıkıştırır. Erkek sürtünme yapar.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="6">✓ Tamamlandı</button>
+          <button class="edit" data-ti="6">Düzenle</button>
+          <button class="danger del" data-ti="6">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Hazırlık</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Kadın bacakları açık yatar, Erkek başucunda.</div>
+          <div class="task-meta">Talimat: Erkek, yüzünü kadının vajina bölgesine (çıplak) yaklaştırır. Dil teması kurmadan, yoğun öpücük transferi (nefes) sağlar.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="7">✓ Tamamlandı</button>
+          <button class="edit" data-ti="7">Düzenle</button>
+          <button class="danger del" data-ti="7">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Küçük Birleşme</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: Ayakta, yüz yüze, kasıklar temas halinde.</div>
+          <div class="task-meta">Talimat: Kadın, kendi Külotunu tamamen çıkarır.adın, erkeğin çıplak penisini vajina girişine doğru yönlendirir ve kalçalarını yavaşça öne-arkaya hareket ettirerek sürtünme sağlar.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="8">✓ Tamamlandı</button>
+          <button class="edit" data-ti="8">Düzenle</button>
+          <button class="danger del" data-ti="8">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Sınırlı Birleşme</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Kadın sırtüstü yatar, Erkek üzerinde durur.</div>
+          <div class="task-meta">Talimat: Her iki partnerin de alt giysileri tamamen çıkarılmıştır.Erkek, penisin ucunu vajina girişine bastırır ve içeri girmeden, güçlü ve yavaş itme-çekme hareketi yapar.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="9">✓ Tamamlandı</button>
+          <button class="edit" data-ti="9">Düzenle</button>
+          <button class="danger del" data-ti="9">Sil</button>
+        </div>
+      </div>
+    </div></div>
+    </li><li class="item">
+      <div class="item-header">
+        <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="text" value="Sessiz Zirve" data-ci="2" class="cat-name">
+          <div class="row" style="gap:6px;align-items:center">
+            <span class="small">Kategori içi görev sıralaması</span>
+            <select class="cat-order" data-ci="2">
+              <option value="fixed" selected="">Sabit</option>
+              <option value="shuffle">Karışık</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="danger cat-del" data-ci="2">Sil</button>
+        </div>
+      </div>
+      <div class="task-form">
+        <div class="task-grid">
+          <input type="text" placeholder="Görev Başlığı" class="t-title" data-ci="2">
+          <select class="t-gender" data-ci="2"><option value="">Cinsiyet (opsiyonel)</option><option value="K">Kadın</option><option value="E">Erkek</option></select>
+          <input type="number" min="5" max="900" value="30" class="t-duration" data-ci="2" placeholder="Süre (sn)">
+          <input type="text" placeholder="Görsel URL (opsiyonel)" class="t-img" data-ci="2">
+        </div>
+        <div class="task-grid-2">
+          <input type="text" placeholder="Görev Pozisyonu" class="t-position" data-ci="2">
+          <textarea placeholder="Görev Talimatı" class="t-instruction" data-ci="2"></textarea>
+        </div>
+        <div class="task-actions">
+          <button class="primary t-add" data-ci="2">+ Görev Ekle</button>
+        </div>
+      </div>
+      <div class="task-list" id="task-list-2"><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Göz Temaslı Birleşme</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Misyoner (Çıplak)</div>
+          <div class="task-meta">Talimat: Erkek, vajinal birleşmeyi başlatır. Yavaş ve ritmik hareketlerle birleşmeyi sürdürür.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="0">✓ Tamamlandı</button>
+          <button class="edit" data-ti="0">Düzenle</button>
+          <button class="danger del" data-ti="0">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Kadın Kontrollü Birleşme</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: Kadın üstte (Cowgirl), yüz yüze (Çıplak).</div>
+          <div class="task-meta">Talimat: Kadın birleşmeyi başlatır ve sadece kendi istediği hız ve ritimde hareket eder. Erkek hareket etmez, sadece destekler.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="1">✓ Tamamlandı</button>
+          <button class="edit" data-ti="1">Düzenle</button>
+          <button class="danger del" data-ti="1">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Duvar Baskısı</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Kadın bir duvara dayanır , Erkek arkasında (Çıplak)</div>
+          <div class="task-meta">Talimat: Erkek, birleşmeyi başlatır. Ellerini kadının kalçasında tutarak sürekli, güçlü bir itme baskısı uygular.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="2">✓ Tamamlandı</button>
+          <button class="edit" data-ti="2">Düzenle</button>
+          <button class="danger del" data-ti="2">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Climax Yakınlığı (Ritmik)</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Kadın</div>
+          <div class="task-meta">Pozisyon: Serbest pozisyon. Kadın Seçimi</div>
+          <div class="task-meta">Talimat: Kadın, kendini orgazma en yakın hissettiği ritmi belirler ve bu ritmi korur.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="3">✓ Tamamlandı</button>
+          <button class="edit" data-ti="3">Düzenle</button>
+          <button class="danger del" data-ti="3">Sil</button>
+        </div>
+      </div>
+    </div><div class="task-row">
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">Maksimum Gerilim Noktası</div>
+          <div class="task-meta">Süre: 30 sn • Hedef: Erkek</div>
+          <div class="task-meta">Pozisyon: Kadın yatar, Erkek üzerinde.</div>
+          <div class="task-meta">Talimat: Erkek, organını vajinaya tamamen sokar ve kesinlikle hareket etmez. Amaç, sadece vajinadaki tam doluluk hissini vermektir.</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="4">✓ Tamamlandı</button>
+          <button class="edit" data-ti="4">Düzenle</button>
+          <button class="danger del" data-ti="4">Sil</button>
+        </div>
+      </div>
+    </div></div>
+    </li></ul>
+  </div>
+
+  <div id="viewRun" class="card" style="display:none">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h2 style="margin:0">🔥 Çift Oyunu — Cesaret &amp; Görevler</h2>
+      <button id="btnNewGame" class="danger">🔁 Yeni Oyun</button>
+    </div>
+    <p class="hint">Doğru +10 / Yanlış -5 → Görev açılıyor... — 30 puanda Şans Çarkı → 5 sn “Görev açılıyor…” → Görev ekranı (sıralı kategori).</p>
+<div class="kv-board">
+  <div class="kv-card">
+    <h4>Skor Çizelgesi (Toplam)</h4>
+    <table class="kv-table">
+      <tbody><tr><td>Kadın — Doğru</td><td><span id="kvKDogru" class="kv-pill">3</span></td></tr>
+      <tr><td>Kadın — Yanlış</td><td><span id="kvKYanlis" class="kv-pill">1</span></td></tr>
+      <tr><td>Erkek — Doğru</td><td><span id="kvEDogru" class="kv-pill">3</span></td></tr>
+      <tr><td>Erkek — Yanlış</td><td><span id="kvEYanlis" class="kv-pill">1</span></td></tr>
+    </tbody></table>
+  </div>
+  <div class="kv-card">
+    <h4>Soru Geçmişi</h4>
+    <div id="kvLog" class="kv-log"><div style="margin-bottom:6px">
+        <b>Skor</b> — Kadın: <span class="kv-pill">60</span> • Erkek: <span class="kv-pill">20</span>
+      </div><div><span class="kv-ok">+10</span> <b>Kadın</b> — Kelime Avı — 2020 Yaz Olimpiyatları hangi şehirde düzenlendi?</div><div><span class="kv-no">-10</span> <b>Erkek</b> — Kelime Avı — Türkiye'nin en uzun nehri hangisidir?</div><div><span class="kv-ok">+10</span> <b>Kadın</b> — Kelime Avı — Atom numarası 1 olan element hangisidir?</div><div><span class="kv-ok">+10</span> <b>Erkek</b> — Kelime Avı — Dünya'ya en yakın yıldız (Güneş hariç) hangisidir?</div><div><span class="kv-no">-10</span> <b>Kadın</b> — Kelime Avı — 'Yüzüklerin Efendisi' üçlemesinin yazarı kimdir?</div><div><span class="kv-ok">+10</span> <b>Erkek</b> — Kelime Avı — İnsan vücudunda oksijeni taşıyan protein hangisidir?</div><div><span class="kv-ok">+10</span> <b>Kadın</b> — Kelime Avı — 'Sefiller' romanının yazarı kimdir?</div><div><span class="kv-ok">+10</span> <b>Erkek</b> — Kelime Avı — WHO (Dünya Sağlık Örgütü) merkezi nerededir?</div><div><span class="kv-ok">+20</span> <b>Kadın</b> — Özel Görev (Tamamlandı) — Duvar Baskısı</div><div><span class="kv-ok">+20</span> <b>Kadın</b> — Özel Görev (Tamamlandı) — Duvar Baskısı</div></div>
+  </div>
+</div>
+
+
+    <div class="row" style="gap:12px;flex-wrap:wrap">
+      <div class="card" style="flex:1;min-width:260px">
+        <div class="row" style="justify-content:space-between"><span class="pill">Kadın</span> <span id="kvKWheel" class="kv-pill">Çark: 0/30</span><b id="kScoreLbl">0 / 30</b></div>
+        <div class="bar" style="margin-top:6px"><div id="kFill" class="fill" style="width:0%"></div></div>
+      </div>
+      <div class="card" style="flex:1;min-width:260px">
+        <div class="row" style="justify-content:space-between"><span class="pill">Erkek</span> <span id="kvEWheel" class="kv-pill">Çark: 0/30</span><b id="eScoreLbl">0 / 30</b></div>
+        <div class="bar" style="margin-top:6px"><div id="eFill" class="fill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="row" style="justify-content:center;gap:8px;margin-top:8px">
+      <span class="pill">Sıra: <b id="kvTurnLbl">Kadın</b></span>
+      <button id="kvSwap">Sırayı Değiştir</button>
+      <button id="kvNew" class="primary">Yeni Soru</button>
+    </div>
+
+    <div class="ring"><span id="kvTimer">30</span></div>
+    <div id="kvStem" class="kv-stem">Hazır olduğunuzda “Yeni Soru”ya basın.</div>
+
+    <div class="kv-media">
+      <img id="kvImg" class="kv-img" alt="soru görseli">
+      <audio id="kvAudio" class="kv-audio" controls="" preload="auto"></audio>
+    </div>
+
+    <div class="kv-opts">
+      <button id="opt0"><span class="kv-letter">A</span><span class="txt"></span></button>
+      <button id="opt1"><span class="kv-letter">B</span><span class="txt"></span></button>
+      <button id="opt2"><span class="kv-letter">C</span><span class="txt"></span></button>
+      <button id="opt3"><span class="kv-letter">D</span><span class="txt"></span></button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" style="position:fixed;top:16px;right:16px;display:none;z-index:9999">
+  <div style="background:#1a1c24;border:1px solid var(--line);color:var(--text);padding:10px 12px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.4);display:flex;align-items:center;gap:8px">
+    <div style="width:8px;height:8px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 4px rgba(251,191,36,.15)"></div>
+    <div id="toastMsg">Yükleme</div>
+  </div>
+</div>
+
+<dialog id="rewardDlg">
+  <div class="modal">
+    <div class="row" style="justify-content:space-between"><h3 style="margin:0">🎉 Özel Görev</h3><span class="badge" id="rewardWho">—</span></div>
+    <div class="ring" style="width:160px;height:160px"><span id="rewardTimer">30</span></div>
+    <img id="rewardImg" class="kv-img" style="display:none;max-width:240px;max-height:180px" alt="görev görseli">
+    <div class="reward-meta">
+      <div class="line task-title" id="rewardTitle">—</div>
+      <div class="line task-meta" id="rewardPos">Pozisyon: —</div>
+      <div class="line task-meta" id="rewardInst">Talimat: —</div>
+    </div>
+    <div class="row" style="justify-content:center;gap:8px;margin-top:8px">
+      <button id="rewardStart" class="primary">Başlat</button>
+      <button id="rewardDone">Tamamlandı</button>
+      <button id="rewardSkip" class="danger">Pas</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="wheelDlg">
+  <div class="modal">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h3 style="margin:0">🎯 Şans Çarkı</h3>
+      <span class="hint">Sıralı mod: İlk tamamlanmamış kategoriden görev açılır. Karışık/Sabit sırası uygulanır.</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+      <canvas id="wheelCanvas" width="380" height="380" style="border-radius:50%;border:1px solid var(--line);background:#0f1015"></canvas>
+      <div class="row" style="gap:8px">
+        <button id="wheelSpin" class="primary">▶ Çevir</button>
+        <button id="wheelCancel">İptal</button>
+      </div>
+      <div id="wheelResult" class="wheel-result">
+        <div class="big" id="wheelMsg">Görev açılıyor…</div>
+        <div class="countdown" style="margin-top:8px"><div id="wheelCdFill"></div></div>
+        <div class="hint" id="wheelCdLabel" style="text-align:center;margin-top:4px">5 sn</div>
+        <div class="row" style="justify-content:center;gap:8px;margin-top:8px">
+          <button id="wheelStop" class="danger">İptal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<audio id="beep" preload="auto">
+  <source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
+</audio>
+
+<script>
+const QUESTION_BANK = {"count":29,"items":[{"type":"mcq","stem":"Dünyanın en büyük okyanusu hangisidir?","options":["Hint Okyanusu","Atlas Okyanusu","Büyük Okyanus","Arktik Okyanusu"],"answer":"Büyük Okyanus"},{"type":"mcq","stem":"Türkiye Cumhuriyeti hangi yılda ilan edildi?","options":["1920","1921","1922","1923"],"answer":"1923"},{"type":"mcq","stem":"Kimyada 'Na' sembolü hangi elementi ifade eder?","options":["Azot","Sodyum","Magnezyum","Nikel"],"answer":"Sodyum"},{"type":"mcq","stem":"WHO (Dünya Sağlık Örgütü) merkezi nerededir?","options":["Washington","Londra","Cenevre","Paris"],"answer":"Cenevre"},{"type":"mcq","stem":"Ay'ın Dünya etrafındaki yörünge süresi yaklaşık kaç gündür?","options":["24","30","27","29"],"answer":"27"},{"type":"mcq","stem":"Işık yılı hangi büyüklüğün ölçüsüdür?","options":["Zaman","Kütle","Mesafe","Sıcaklık"],"answer":"Mesafe"},{"type":"mcq","stem":"DNA'nın yapıtaşı olan bazlardan biri değildir:","options":["Adenin","Timin","Guanin","Riboz"],"answer":"Riboz"},{"type":"mcq","stem":"Mona Lisa tablosunun ressamı kimdir?","options":["Michelangelo","Leonardo da Vinci","Raphael","Van Gogh"],"answer":"Leonardo da Vinci"},{"type":"mcq","stem":"Osmanlı Devleti'nin kurucusu kimdir?","options":["Osman Bey","Orhan Gazi","Yıldırım Bayezid","Fatih Sultan Mehmet"],"answer":"Osman Bey"},{"type":"mcq","stem":"H2O formülü hangi maddeyi ifade eder?","options":["Hidrojen peroksit","Su","Amonyak","Metan"],"answer":"Su"},{"type":"mcq","stem":"Fransa'nın başkenti neresidir?","options":["Berlin","Madrid","Paris","Roma"],"answer":"Paris"},{"type":"mcq","stem":"Newton'un hareket yasaları kaç tanedir?","options":["1","2","3","4"],"answer":"3"},{"type":"mcq","stem":"'Sefiller' romanının yazarı kimdir?","options":["Victor Hugo","Balzac","Tolstoy","Dostoyevski"],"answer":"Victor Hugo"},{"type":"mcq","stem":"Türkiye'nin en uzun nehri hangisidir?","options":["Kızılırmak","Fırat","Dicle","Sakarya"],"answer":"Kızılırmak"},{"type":"mcq","stem":"İnsan vücudunda oksijeni taşıyan protein hangisidir?","options":["Miyoglobin","Hemoglobin","Albumin","Keratin"],"answer":"Hemoglobin"},{"type":"mcq","stem":"Altının kimyasal sembolü nedir?","options":["Ag","Au","Al","Pt"],"answer":"Au"},{"type":"mcq","stem":"Dünya'ya en yakın yıldız (Güneş hariç) hangisidir?","options":["Betelgeuse","Sirius","Proxima Centauri","Vega"],"answer":"Proxima Centauri"},{"type":"mcq","stem":"İstanbul hangi iki kıtayı birleştirir?","options":["Asya ve Avrupa","Avrupa ve Afrika","Asya ve Afrika","Kuzey Amerika ve Avrupa"],"answer":"Asya ve Avrupa"},{"type":"mcq","stem":"Einstein'ın ünlü denklemi hangisidir?","options":["F=ma","E=mc^2","pV=nRT","a^2+b^2=c^2"],"answer":"E=mc^2"},{"type":"mcq","stem":"Osmanlı'da 'Tanzimat Fermanı' hangi yılda ilan edildi?","options":["1826","1839","1856","1876"],"answer":"1839"},{"type":"mcq","stem":"Fotosentez için gerekli gaz hangisidir?","options":["Oksijen","Azot","Karbondioksit","Helyum"],"answer":"Karbondioksit"},{"type":"mcq","stem":"Ekvator hangi enlem derecesidir?","options":["0°","23.5°","45°","66.5°"],"answer":"0°"},{"type":"mcq","stem":"'Yüzüklerin Efendisi' üçlemesinin yazarı kimdir?","options":["J.K. Rowling","J.R.R. Tolkien","C.S. Lewis","George R.R. Martin"],"answer":"J.R.R. Tolkien"},{"type":"mcq","stem":"Dünyanın en yüksek dağı hangisidir?","options":["K2","Everest","Kangchenjunga","Lhotse"],"answer":"Everest"},{"type":"mcq","stem":"Elektrik akımının birimi nedir?","options":["Volt","Ohm","Amper","Watt"],"answer":"Amper"},{"type":"mcq","stem":"Türkiye'nin milli marşının adı nedir?","options":["Gençlik Marşı","İstiklal Marşı","Onuncu Yıl Marşı","Zafer Marşı"],"answer":"İstiklal Marşı"},{"type":"mcq","stem":"Atom numarası 1 olan element hangisidir?","options":["Helyum","Hidrojen","Lityum","Karbon"],"answer":"Hidrojen"},{"type":"mcq","stem":"'Kaplumbağa Terbiyecisi' tablosu kime aittir?","options":["İbrahim Çallı","Osman Hamdi Bey","Şeker Ahmet Paşa","Hoca Ali Rıza"],"answer":"Osman Hamdi Bey"},{"type":"mcq","stem":"2020 Yaz Olimpiyatları hangi şehirde düzenlendi?","options":["Rio","Tokyo","Londra","Paris"],"answer":"Tokyo"}]};
+// --- injected: force new bank and clear overrides ---
+try { localStorage.removeItem('kv_question_bank_override_v1'); } catch(e) {}
+Object.defineProperty(window, 'QUESTION_BANK', { value: QUESTION_BANK, writable: false, configurable: false });
+// --- end injected ---
+
+
+// KEYS
+const KEY='mobiroller_categories_v2_tasks_v41';
+const KEY_DONE='mobiroller_tasks_done_ids_v41';
+const KEY_SEQ='mobiroller_cat_sequential_v41'; // 1 açık
+const KEY_CAT_ORDER='mobiroller_cat_shuffle_v41'; // kategori listesi karışık
+if(localStorage.getItem(KEY_SEQ)===null) localStorage.setItem(KEY_SEQ,'1');
+
+// helpers
+function getSeq(){ return (localStorage.getItem(KEY_SEQ)||'1')==='1'; }
+function setSeq(v){ localStorage.setItem(KEY_SEQ, v?'1':'0'); }
+function getCatShuffle(){ return localStorage.getItem(KEY_CAT_ORDER)==='1'; }
+function setCatShuffle(v){ localStorage.setItem(KEY_CAT_ORDER, v?'1':'0'); }
+function showToast(m){ const t=document.getElementById('toast'); const s=document.getElementById('toastMsg'); s.textContent=m; t.style.display='block'; t.style.opacity='0'; requestAnimationFrame(()=>{ t.style.transition='all .25s'; t.style.opacity='1'; }); setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>{t.style.display='none';},250); },1600); }
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+// storage
+function load(){ return JSON.parse(localStorage.getItem(KEY)||'[]'); }
+function save(d){ localStorage.setItem(KEY, JSON.stringify(d)); }
+function loadDone(){ return new Set(JSON.parse(localStorage.getItem(KEY_DONE)||'[]')); }
+function saveDone(set){ localStorage.setItem(KEY_DONE, JSON.stringify(Array.from(set))); }
+function ensureDefaults(c){ if(!c) c={}; if(!Array.isArray(c.tasks)) c.tasks=[]; if(typeof c.rand!=='boolean') c.rand=false; if(typeof c.name!=='string') c.name='Kategori'; return c; }
+
+// tabs
+const tabSettings=document.getElementById('tabSettings');
+const tabRun=document.getElementById('tabRun');
+const viewSettings=document.getElementById('viewSettings');
+const viewRun=document.getElementById('viewRun');
+tabSettings.onclick=()=>{ tabSettings.classList.add('active'); tabRun.classList.remove('active'); viewSettings.style.display='block'; viewRun.style.display='none'; render(); };
+tabRun.onclick=()=>{ tabRun.classList.add('active'); tabSettings.classList.remove('active'); viewSettings.style.display='none'; viewRun.style.display='block'; };
+
+// toolbar
+const btnExportHtml=document.getElementById('btnExportHtml');
+const btnImportFile=document.getElementById('btnImportFile');
+const importInput=document.getElementById('importInput');
+const btnShuffleCats=document.getElementById('btnShuffleCats');
+const btnResetDone=document.getElementById('btnResetDone');
+const btnSeq=document.getElementById('btnSeq');
+function refreshToolbar(){
+  btnShuffleCats.textContent = 'Kategori Sırası: ' + (getCatShuffle()?'Karışık':'Sabit');
+  btnSeq.textContent = 'Sıralı İlerleme: ' + (getSeq()?'Açık':'Kapalı');
+}
+btnShuffleCats.onclick=()=>{ setCatShuffle(!getCatShuffle()); refreshToolbar(); };
+btnResetDone.onclick=()=>{ if(!confirm('Tüm tamamlanan işaretleri sıfırlansın mı?')) return; localStorage.setItem(KEY_DONE,'[]'); showToast('Sıfırlandı'); render(); };
+btnSeq.onclick=()=>{ setSeq(!getSeq()); refreshToolbar(); };
+btnExportHtml.onclick=()=>{ const blob=new Blob([document.documentElement.outerHTML],{type:'text/html'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='gorev-timer-v2.41-stable.html'; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},800); };
+btnImportFile.onclick=()=>importInput.click();
+importInput.onchange=()=>{ alert('Bu sürümde dışa aktarım aktif, içe aktarım bir sonraki sürümde.'); importInput.value=''; };
+
+// category UI
+const catInput=document.getElementById('catInput');
+const btnAddCat=document.getElementById('btnAddCat');
+const catList=document.getElementById('catList');
+btnAddCat.onclick=()=>{
+  const name=(catInput.value||'').trim();
+  if(!name){ showToast('Kategori adı girin.'); return; }
+  const data=load().map(ensureDefaults);
+  data.push({name,rand:false,tasks:[]});
+  save(data); catInput.value=''; render();
+};
+
+function render(){
+  refreshToolbar();
+  const data=load().map(ensureDefaults);
+  catList.innerHTML='';
+  if(!data.length){
+    const li=document.createElement('li'); li.className='item'; li.innerHTML='<div class="small">Henüz kategori yok. Üstten ad yazıp “+ Kategori Ekle”.</div>'; catList.appendChild(li); return;
+  }
+  data.forEach((cat,ci)=>{
+    const li=document.createElement('li'); li.className='item';
+    li.innerHTML=`
+      <div class="item-header">
+        <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="text" value="${cat.name||''}" data-ci="${ci}" class="cat-name"/>
+          <div class="row" style="gap:6px;align-items:center">
+            <span class="small">Kategori içi görev sıralaması</span>
+            <select class="cat-order" data-ci="${ci}">
+              <option value="fixed" ${cat.rand?'':'selected'}>Sabit</option>
+              <option value="shuffle" ${cat.rand?'selected':''}>Karışık</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="danger cat-del" data-ci="${ci}">Sil</button>
+        </div>
+      </div>
+      <div class="task-form">
+        <div class="task-grid">
+          <input type="text" placeholder="Görev Başlığı" class="t-title" data-ci="${ci}"/>
+          <select class="t-gender" data-ci="${ci}"><option value="">Cinsiyet (opsiyonel)</option><option value="K">Kadın</option><option value="E">Erkek</option></select>
+          <input type="number" min="5" max="900" value="30" class="t-duration" data-ci="${ci}" placeholder="Süre (sn)"/>
+          <input type="text" placeholder="Görsel URL (opsiyonel)" class="t-img" data-ci="${ci}"/>
+        </div>
+        <div class="task-grid-2">
+          <input type="text" placeholder="Görev Pozisyonu" class="t-position" data-ci="${ci}"/>
+          <textarea placeholder="Görev Talimatı" class="t-instruction" data-ci="${ci}"></textarea>
+        </div>
+        <div class="task-actions">
+          <button class="primary t-add" data-ci="${ci}">+ Görev Ekle</button>
+        </div>
+      </div>
+      <div class="task-list" id="task-list-${ci}"></div>
+    `;
+    catList.appendChild(li);
+
+    li.querySelector('.cat-name').onchange=(e)=>{ const d=load().map(ensureDefaults); d[ci].name=e.target.value; save(d); };
+    li.querySelector('.cat-order').onchange=(e)=>{ const d=load().map(ensureDefaults); d[ci].rand=(e.target.value==='shuffle'); save(d); };
+    li.querySelector('.cat-del').onclick=()=>{ if(!confirm('Kategori silinsin mi?')) return; const d=load().map(ensureDefaults); d.splice(ci,1); save(d); render(); };
+    li.querySelector('.t-add').onclick=()=>{
+      const title=li.querySelector('.t-title').value.trim();
+      const gender=li.querySelector('.t-gender').value||null;
+      const dsec=parseInt(li.querySelector('.t-duration').value||'30',10)||30;
+      const img=(li.querySelector('.t-img').value||'').trim()||null;
+      const position=(li.querySelector('.t-position').value||'').trim();
+      const instruction=(li.querySelector('.t-instruction').value||'').trim();
+      if(!title){ showToast('Görev başlığı zorunlu'); return; }
+      const d=load().map(ensureDefaults);
+      const t={ id: Date.now()+Math.random().toString(16).slice(2), title, gender, d: dsec, img, position, instruction };
+      d[ci].tasks.push(t); save(d);
+      li.querySelector('.t-title').value=''; li.querySelector('.t-img').value=''; li.querySelector('.t-position').value=''; li.querySelector('.t-instruction').value='';
+      renderTasks(ci);
+    };
+    renderTasks(ci);
+  });
+}
+
+function renderTasks(ci){
+  const data=load().map(ensureDefaults);
+  const cat=data[ci];
+  const wrap=document.getElementById('task-list-'+ci);
+  const done=loadDone();
+  wrap.innerHTML='';
+  if(!cat.tasks.length){ wrap.innerHTML='<div class="small">Bu kategoride görev yok.</div>'; return; }
+  cat.tasks.forEach((t,ti)=>{
+    const row=document.createElement('div'); row.className='task-row';
+    row.innerHTML=`
+      <div class="row" style="justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div>
+          <div class="task-title">${t.title}</div>
+          <div class="task-meta">Süre: ${t.d||30} sn • ${t.gender?('Hedef: '+(t.gender==='K'?'Kadın':'Erkek')):'Genel'}</div>
+          <div class="task-meta">Pozisyon: ${t.position||'-'}</div>
+          <div class="task-meta">Talimat: ${t.instruction||'-'}</div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="mark-done" data-ti="${ti}" ${done.has(t.id)?'disabled':''}>✓ Tamamlandı</button>
+          <button class="edit" data-ti="${ti}">Düzenle</button>
+          <button class="danger del" data-ti="${ti}">Sil</button>
+        </div>
+      </div>
+    `;
+    wrap.appendChild(row);
+    row.querySelector('.del').onclick=()=>{ if(!confirm('Görev silinsin mi?')) return; const d=load().map(ensureDefaults); d[ci].tasks.splice(ti,1); save(d); renderTasks(ci); };
+    row.querySelector('.mark-done').onclick=()=>{ const ds=loadDone(); ds.add(t.id); saveDone(ds); renderTasks(ci); };
+    row.querySelector('.edit').onclick=()=>{
+      const title=prompt('Başlık', t.title)||t.title;
+      const duration=parseInt(prompt('Süre (sn)', t.d||30)||t.d||30,10)||t.d||30;
+      const gender=(prompt('Hedef (boş/K/E)', t.gender||'')||'').trim()||null;
+      const pos=prompt('Pozisyon', t.position||'')||'';
+      const ins=prompt('Talimat', t.instruction||'')||'';
+      const d=load().map(ensureDefaults);
+      Object.assign(d[ci].tasks[ti], {title: title.trim(), d: duration, gender, position: pos, instruction: ins});
+      save(d); renderTasks(ci);
+    };
+  });
+}
+
+// Quiz/game (same as before, shortened timing parts)
+const kvTimerEl=document.getElementById('kvTimer'), kvStemEl=document.getElementById('kvStem');
+const kvImg=document.getElementById('kvImg'), kvAudio=document.getElementById('kvAudio');
+const optEls=[document.getElementById('opt0'),document.getElementById('opt1'),document.getElementById('opt2'),document.getElementById('opt3')];
+const kvNew=document.getElementById('kvNew'), kvSwap=document.getElementById('kvSwap'), kvTurnLbl=document.getElementById('kvTurnLbl');
+const kFill=document.getElementById('kFill'), eFill=document.getElementById('eFill'); const kScoreLbl=document.getElementById('kScoreLbl'), eScoreLbl=document.getElementById('eScoreLbl');
+const beep=document.getElementById('beep');
+let kvTurn='K', kvRemain=30, kvTimer=null, kScore=0, eScore=0, currentCorrect=-1;
+function doBeep(){ try{ beep.currentTime=0; beep.play(); }catch(e){} }
+function kvUpd(){ kvTurnLbl.textContent=kvTurn==='K'?'Kadın':'Erkek'; kFill.style.width=Math.min(100,(kScore/30)*100)+'%'; eFill.style.width=Math.min(100,(eScore/30)*100)+'%'; kScoreLbl.textContent=`${kScore} / 30`; eScoreLbl.textContent=`${eScore} / 30`; }
+function pickQuestion(){ const it=QUESTION_BANK.items; const r=Math.random(); let p=it; if(r<.55)p=it.filter(q=>q.type==='mcq'); else if(r<.70)p=it.filter(q=>q.type==='image'); else if(r<.80)p=it.filter(q=>q.type==='audio'); else if(r<.90)p=it.filter(q=>q.type==='tf'); else p=it.filter(q=>q.type==='fill'||q.type==='logic'); if(!p.length)p=it; return p[(Math.random()*p.length)|0]; }
+function renderQuestion(q){ kvImg.style.display='none'; kvAudio.style.display='none'; kvAudio.src=''; kvImg.src=''; kvStemEl.textContent=q.stem; if(q.type==='image'&&q.img){kvImg.src=q.img; kvImg.style.display='block';} if(q.type==='audio'&&q.audio){kvAudio.src=q.audio; kvAudio.style.display='block';} let options=q.options||[]; if(q.type==='tf') options=["Doğru","Yanlış"]; while(options.length<4) options.push("—"); options=options.slice(0,4); currentCorrect=options.indexOf(q.answer); if(currentCorrect===-1){options[0]=q.answer; currentCorrect=0;} for(let i=0;i<4;i++){ optEls[i].style.display='flex'; optEls[i].disabled=false; optEls[i].classList.remove('opt-correct','opt-wrong'); optEls[i].querySelector('.txt').textContent=String(options[i]); } }
+function kvStartQ(){ const q=pickQuestion(); renderQuestion(q); kvRemain=30; kvTimerEl.textContent=kvRemain; clearInterval(kvTimer); kvTimer=setInterval(()=>{ kvRemain--; if(kvRemain<=5 && kvRemain>0) doBeep(); if(kvRemain<=0){ clearInterval(kvTimer); kvTimer=null; endQuestion(false);} kvTimerEl.textContent=Math.max(0,kvRemain); },1000); }
+function endQuestion(){ optEls.forEach(b=>b.disabled=true); setTimeout(()=>{ kvNext(); }, 350); }
+function onChoose(i){ if(kvTimer){clearInterval(kvTimer); kvTimer=null;} if(i===currentCorrect){ optEls[i].classList.add('opt-correct'); if(kvTurn==='K')kScore+=10; else eScore+=10; } else { optEls[i].classList.add('opt-wrong'); if(currentCorrect>=0) optEls[currentCorrect].classList.add('opt-correct'); if(kvTurn==='K')kScore=Math.max(0,kScore-5); else eScore=Math.max(0,eScore-5); } if(kScore>=30){ kScore=0; kvUpd(); rewardNow('Kadın'); } else if(eScore>=30){ eScore=0; kvUpd(); rewardNow('Erkek'); } kvUpd(); endQuestion(); }
+optEls.forEach((b,i)=> b.onclick=()=>onChoose(i));
+function kvNext(){ kvTurn = kvTurn==='K'?'E':'K'; kvUpd(); }
+kvSwap.onclick=()=>{ kvTurn = kvTurn==='K'?'E':'K'; kvUpd(); };
+kvNew.onclick=kvStartQ;
+
+// Reward & wheel
+const rewardDlg=document.getElementById('rewardDlg'); const rewardWho=document.getElementById('rewardWho');
+const rewardTitle=document.getElementById('rewardTitle'); const rewardPos=document.getElementById('rewardPos'); const rewardInst=document.getElementById('rewardInst');
+const rewardTimerEl=document.getElementById('rewardTimer'); const rewardStart=document.getElementById('rewardStart');
+const rewardDone=document.getElementById('rewardDone'); const rewardSkip=document.getElementById('rewardSkip'); const rewardImg=document.getElementById('rewardImg');
+let rewardRemain=30, rewardTick=null; let rewardCurrentTask=null;
+
+function firstIncompleteCategoryIndex(){
+  const d=load().map(ensureDefaults); const done=loadDone();
+  for(let ci=0; ci<d.length; ci++){ const cat=d[ci]; if(!cat.tasks||!cat.tasks.length) continue; if(cat.tasks.some(t=>!done.has(t.id))) return ci; }
+  return -1;
+}
+function pickFromCategory(ci){
+  const d=load().map(ensureDefaults); const done=loadDone(); const cat=d[ci]; if(!cat||!cat.tasks||!cat.tasks.length) return null;
+  const undone=cat.tasks.filter(t=>!done.has(t.id)); if(!undone.length) return null;
+  const ch = cat.rand ? undone[(Math.random()*undone.length)|0] : undone[0];
+  return {ci, ti: cat.tasks.indexOf(ch), t: ch, catName: cat.name};
+}
+function findNextTask(){
+  if(getSeq()){ const idx=firstIncompleteCategoryIndex(); if(idx<0) return null; return pickFromCategory(idx); }
+  const d=load().map(ensureDefaults); const order=[...Array(d.length).keys()]; if(getCatShuffle()) shuffle(order);
+  for(const ci of order){ const p=pickFromCategory(ci); if(p) return p; } return null;
+}
+function openReward(who, picked){
+  const sel = picked || findNextTask();
+  if(!sel){ rewardWho.textContent='—'; rewardTitle.textContent='Görev bulunamadı'; rewardPos.textContent='Pozisyon: —'; rewardInst.textContent='Talimat: —'; rewardImg.style.display='none'; rewardRemain=30; rewardTimerEl.textContent=rewardRemain; rewardDlg.showModal(); return; }
+  rewardCurrentTask=sel; rewardWho.textContent=who|| (sel.t.gender==='E' ? 'Erkek' : 'Kadın');
+  rewardTitle.textContent = sel.catName + ' • ' + sel.t.title;
+  rewardPos.textContent = 'Pozisyon: ' + (sel.t.position||'-');
+  rewardInst.textContent= 'Talimat: ' + (sel.t.instruction||'-');
+  if(sel.t.img){ rewardImg.src=sel.t.img; rewardImg.style.display='block'; rewardImg.onerror=()=>{rewardImg.style.display='none';}; } else { rewardImg.style.display='none'; }
+  rewardRemain= sel.t.d || 30; rewardTimerEl.textContent=rewardRemain; rewardDlg.showModal();
+}
+rewardStart.onclick=()=>{ clearInterval(rewardTick); rewardTick=setInterval(()=>{ rewardRemain--; if(rewardRemain<=5 && rewardRemain>0) doBeep(); if(rewardRemain<=0){ clearInterval(rewardTick); rewardTick=null; doBeep(); } rewardTimerEl.textContent=Math.max(0,rewardRemain); },1000); };
+rewardDone.onclick=()=>{ clearInterval(rewardTick); rewardTick=null; if(rewardCurrentTask){ const set=loadDone(); set.add(rewardCurrentTask.t.id); saveDone(set); } rewardDlg.close(); };
+rewardSkip.onclick=()=>{ clearInterval(rewardTick); rewardTick=null; rewardDlg.close(); };
+
+const wheelDlg = document.getElementById('wheelDlg'); const wheelCanvas=document.getElementById('wheelCanvas'); const wheelSpin=document.getElementById('wheelSpin'); const wheelCancel=document.getElementById('wheelCancel');
+const wctx=wheelCanvas.getContext('2d'); let wheelCats=[]; let wheelAngle=0; let spinning=false; let wheelWho='Kadın';
+const wheelResult=document.getElementById('wheelResult'); const wheelCdFill=document.getElementById('wheelCdFill'); const wheelCdLabel=document.getElementById('wheelCdLabel'); const wheelStop=document.getElementById('wheelStop');
+function buildWheel(){
+  const d=load().map(ensureDefaults); const done=loadDone();
+  if(getSeq()){ const idx=firstIncompleteCategoryIndex(); if(idx<0){ wheelCats=[]; return; } const c=d[idx]; if(c.tasks.some(t=>!done.has(t.id))) wheelCats=[{name:c.name,ci:idx}]; else wheelCats=[]; return; }
+  wheelCats=d.map((c,ci)=>({name:c.name,ci})).filter(x=>{ const cat=d[x.ci]; return (cat.tasks||[]).some(t=>!done.has(t.id)); });
+}
+function drawWheel(){
+  const N=Math.max(1,wheelCats.length), R=wheelCanvas.width/2, cx=R, cy=R, slice=(Math.PI*2)/N;
+  wctx.clearRect(0,0,wheelCanvas.width,wheelCanvas.height); wctx.save(); wctx.translate(cx,cy); wctx.rotate(wheelAngle);
+  for(let i=0;i<N;i++){ wctx.beginPath(); wctx.moveTo(0,0); wctx.arc(0,0,R,i*slice,(i+1)*slice); wctx.closePath(); wctx.fillStyle=`hsl(${(i*360/N)|0},70%,45%)`; wctx.fill(); wctx.lineWidth=2; wctx.strokeStyle='#0b0c10'; wctx.stroke();
+    wctx.save(); const mid=i*slice+slice/2; wctx.rotate(mid); wctx.textAlign='right'; wctx.fillStyle='#fff'; wctx.font='14px system-ui'; wctx.fillText(wheelCats[i%wheelCats.length]?.name||'—', R-10, 0); wctx.restore(); }
+  wctx.restore(); wctx.beginPath(); wctx.moveTo(cx,6); wctx.lineTo(cx-8,20); wctx.lineTo(cx+8,20); wctx.closePath(); wctx.fillStyle='#4f8cff'; wctx.fill();
+}
+function openWheel(who){ wheelWho=who||'Kadın'; buildWheel(); if(!wheelCats.length){ showToast('Seçilebilir kategori yok.'); return openReward(wheelWho); } wheelAngle=0; drawWheel(); wheelResult.style.display='none'; wheelDlg.showModal(); }
+function startCountdown(picked){ wheelResult.style.display='block'; let cd=5; wheelCdFill.style.width='100%'; wheelCdLabel.textContent=cd+' sn'; const int=setInterval(()=>{ cd--; wheelCdFill.style.width=(Math.max(0,cd)/5*100)+'%'; wheelCdLabel.textContent=cd>0?cd+' sn':'Açılıyor…'; if(cd<=0){ clearInterval(int); setTimeout(()=>{ wheelDlg.close(); openReward(wheelWho, picked||undefined); },120);} },1000); wheelStop.onclick=()=>{ clearInterval(int); wheelResult.style.display='none'; }; }
+function spin(){ if(spinning) return; spinning=true; const N=Math.max(1,wheelCats.length), slice=(Math.PI*2)/N; const extra=2+Math.random()*3; const target=(Math.random()*N)|0; const targetAngle=(Math.PI*2)*extra + (Math.PI/2) - (target*slice + slice/2); const start=performance.now(), dur=2400+Math.random()*800, startA=wheelAngle;
+  const step=(t)=>{ const p=Math.min(1,(t-start)/dur); const eased=1-Math.pow(1-p,3); wheelAngle=startA+eased*(targetAngle-startA); drawWheel(); if(p<1) requestAnimationFrame(step); else { spinning=false; const pick=pickFromCategory(wheelCats[target].ci); startCountdown(pick);} }; requestAnimationFrame(step); }
+wheelCancel.onclick=()=>wheelDlg.close(); wheelSpin.onclick=spin;
+
+// triggers
+function rewardNow(who){ openWheel(who); }
+document.getElementById('btnNewGame').onclick=()=>{ if(!confirm('Yeni oyun? (tamamlanan görevler sıfırlanır)')) return; localStorage.setItem(KEY_DONE,'[]'); kScore=0; eScore=0; kvTurn='K'; if(kvTimer){clearInterval(kvTimer);kvTimer=null;} kvRemain=30; kvTimerEl.textContent=kvRemain; try{rewardDlg.close();}catch(e){} kvUpd(); showToast('Yeni oyun'); };
+
+// init
+render(); refreshToolbar();
+</script>
+
+<script>
+// === injected: augment tasks with numbering + DnD reordering without breaking existing code ===
+(function(){
+  // keep original
+  const _renderTasks = window.renderTasks;
+  if(!_renderTasks) return;
+
+  // helpers from page scope assumed: load(), save(), ensureDefaults()
+  function renumber(wrap){
+    const rows = Array.from(wrap.querySelectorAll('.task-row'));
+    rows.forEach((row, i)=>{
+      let num = row.querySelector('.task-num');
+      if(!num){
+        num = document.createElement('span');
+        num.className = 'task-num';
+        // put before title if possible
+        const title = row.querySelector('.task-title');
+        const container = title && title.parentElement ? title.parentElement : row;
+        const handle = document.createElement('span'); handle.textContent='↕'; handle.className='drag-handle';
+        container.insertBefore(num, container.firstChild);
+        container.insertBefore(handle, container.firstChild);
+        row.setAttribute('draggable', 'true');
+        row.addEventListener('dragstart', ()=> row.classList.add('dragging'));
+        row.addEventListener('dragend', ()=> row.classList.remove('dragging'));
+      }
+      num.textContent = String(i+1);
+    });
+  }
+
+  function attachDnD(ci, wrap){
+    const data = load().map(ensureDefaults);
+    const cat = data[ci];
+
+    wrap.addEventListener('dragover', (e)=>{
+      e.preventDefault();
+      const dragging = wrap.querySelector('.task-row.dragging');
+      if(!dragging) return;
+      const after = getAfter(wrap, e.clientY);
+      if(after==null) wrap.appendChild(dragging);
+      else wrap.insertBefore(dragging, after);
+    });
+
+    wrap.addEventListener('drop', ()=>{
+      // persist DOM order to state
+      const orderEls = Array.from(wrap.querySelectorAll('.task-row'));
+      // find each task's title to map back; safer: data-index via position in original render
+      const original = cat.tasks.slice();
+      const map = new Map();
+      // try to identify by action buttons having data-ti
+      orderEls.forEach(el=>{
+        const delBtn = el.querySelector('.del[data-ti]');
+        if(delBtn){
+          map.set(el, parseInt(delBtn.getAttribute('data-ti'),10));
+        } else {
+          // fallback: by title text content
+          const t = (el.querySelector('.task-title')?.textContent||'').trim();
+          const idx = original.findIndex(x=>x.title===t && !x.__used);
+          if(idx>-1){ original[idx].__used=true; map.set(el, idx); }
+        }
+      });
+      const newTasks = orderEls.map(el=> cat.tasks[ map.get(el) ?? 0 ]).filter(Boolean);
+      if(newTasks.length===cat.tasks.length){
+        const d = load().map(ensureDefaults);
+        d[ci].tasks = newTasks.map(t=>{ const c={...t}; delete c.__used; return c; });
+        save(d);
+      }
+      renumber(wrap);
+    });
+
+    function getAfter(container, y){
+      const els = [...container.querySelectorAll('.task-row:not(.dragging)')];
+      let closest = null, closestOffset = Number.NEGATIVE_INFINITY;
+      els.forEach(child=>{
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height/2;
+        if(offset < 0 && offset > closestOffset){ closestOffset = offset; closest = child; }
+      });
+      return closest;
+    }
+  }
+
+  window.renderTasks = function(ci){
+    _renderTasks(ci);
+    const wrap = document.getElementById('task-list-'+ci);
+    if(!wrap) return;
+    renumber(wrap);
+    // only attach once
+    if(!wrap.__dndAttached){ attachDnD(ci, wrap); wrap.__dndAttached = true; }
+  };
+})();
+</script>
+
+
+<script>
+// === injected: importer for "SoruŞıklarDoğru Cevap" format ===
+(function(){
+  const LS_QB = 'kv_question_bank_override_v1';
+
+  function parseUserQA(txt){
+    const items = [];
+    let i = 0, num = 1;
+    function pick(re){ const m = re.exec(txt.slice(i)); if(!m) return null; m.index0=i+m.index; return m; }
+    while(true){
+      const mStem = pick(new RegExp(String(num).replace('.', '\\.') + String.raw`\.\s*([^?]+)\?`, 'm'));
+      if(!mStem) break;
+      const stem = mStem[1].trim();
+      i = mStem.index0 + mStem[0].length;
+      const mOpts = pick(/A\)\s*([^,]+),\s*B\)\s*([^,]+),\s*C\)\s*([^,]+),\s*D\)\s*([^\dA-D]+)/m);
+      if(!mOpts) break;
+      const A = mOpts[1].trim(), B = mOpts[2].trim(), C = mOpts[3].trim(), D = mOpts[4].trim().replace(/[,\s]+$/,'');
+      i = mOpts.index0 + mOpts[0].length;
+      const mAns = pick(/([A-D])\)\s*([^\d]+)/m) || pick(/([A-D])\)\s*/m);
+      if(!mAns) break;
+      const letter = mAns[1];
+      i = mAns.index0 + mAns[0].length;
+      const map = {A, B, C, D};
+      items.push({type:'mcq', stem, options:[A,B,C,D], answer: map[letter]});
+      num++;
+      if(num>1000) break;
+    }
+    return items;
+  }
+
+  function saveOverride(bank){
+    try { localStorage.setItem(LS_QB, JSON.stringify(bank)); } catch(e){}
+  }
+  function loadOverride(){
+    try { return JSON.parse(localStorage.getItem(LS_QB)||'null'); } catch(e){ return null; }
+  }
+
+  // Hook question loader: if override exists, use it
+  if(window.QUESTION_BANK){
+    const ob = loadOverride();
+    if(ob && Array.isArray(ob.items) && ob.items.length){
+      window.QUESTION_BANK = ob;
+    }
+  }
+
+  // Add button handler
+  document.getElementById('btnImportQA')?.addEventListener('click', ()=>{
+    const txt = prompt('Soru metnini buraya yapıştırın (format: "SoruŞıklarDoğru Cevap")\\nNot: Sadece A-D şıklı sorular desteklenir.');
+    if(!txt) return;
+    const items = parseUserQA(txt);
+    if(!items.length){ alert('Hiç soru algılanamadı. Lütfen formatı kontrol edin.'); return; }
+    const bank = { count: items.length, items };
+    saveOverride(bank);
+    window.QUESTION_BANK = bank;
+    alert(items.length + ' soru yüklendi. Oyun ekranında yeni sorular kullanılacak.');
+  });
+})();
+</script>
+
+
+<script>
+// --- injected: 2 oyuncu Doğru/Yanlış çizelgesi + geçmiş ---
+(function(){
+  const LSKEY = 'kv_stats_v1';
+  function loadStats(){
+    try{ return JSON.parse(localStorage.getItem(LSKEY)||'{"K":{"d":0,"y":0},"E":{"d":0,"y":0},"log":[]}'); }catch(e){ return {"K":{"d":0,"y":0},"E":{"d":0,"y":0},"log":[]}; }
+  }
+  function saveStats(s){ try{ localStorage.setItem(LSKEY, JSON.stringify(s)); }catch(e){} }
+  const S = loadStats();
+  const el = (id)=>document.getElementById(id);
+  function renderBoard(){
+    el('kvKDogru').textContent = S.K.d;
+    el('kvKYanlis').textContent = S.K.y;
+    el('kvEDogru').textContent = S.E.d;
+    el('kvEYanlis').textContent = S.E.y;
+    const log = el('kvLog'); if(!log) return;
+    log.innerHTML = S.log.slice(-50).map(item=>{
+      const who = item.turn==='K' ? 'Kadın' : 'Erkek';
+      const cls = item.correct ? 'kv-ok' : 'kv-no';
+      const icon = item.correct ? '✓' : '✗';
+      const stem = (item.stem||'').replace(/</g,'&lt;').slice(0,90);
+      return `<div><span class="${cls}">${icon}</span> <b>${who}</b> — ${stem}</div>`;
+    }).join('');
+  }
+  // expose reset helper (optional)
+  window.kvResetStats = function(){ S.K.d=S.K.y=S.E.d=S.E.y=0; S.log=[]; saveStats(S); renderBoard(); };
+
+  // capture current question stem by wrapping renderQuestion
+  if (typeof renderQuestion === 'function'){
+    const __renderQuestion = renderQuestion;
+    window.renderQuestion = function(q){
+      window.kvCurrentQ = q;
+      return __renderQuestion(q);
+    };
+  }
+
+  // wrap onChoose to update stats after original logic runs
+  if (typeof onChoose === 'function'){
+    const __onChoose = onChoose;
+    window.onChoose = function(i){
+      const turn = (typeof kvTurn!=='undefined') ? kvTurn : 'K';
+      const correctNow = (typeof currentCorrect!=='undefined') ? (i===currentCorrect) : false;
+      __onChoose(i);
+      // Update stats after original updates
+      if (turn==='K'){ S.K[ correctNow ? 'd' : 'y' ]++; }
+      else { S.E[ correctNow ? 'd' : 'y' ]++; }
+      S.log.push({turn:turn, correct:correctNow, stem:(window.kvCurrentQ && window.kvCurrentQ.stem)||null});
+      saveStats(S);
+      renderBoard();
+    };
+  }
+
+  // render once at load
+  document.addEventListener('DOMContentLoaded', renderBoard);
+})();
+</script>
+
+
+<script>
+// --- injected: çark ilerleme göstergesi + manuel tetik ---
+(function(){
+  function updWheelBadges(){
+    try{
+      if(typeof kScore!=='undefined') document.getElementById('kvKWheel').textContent = 'Çark: ' + (kScore|0) + '/30';
+      if(typeof eScore!=='undefined') document.getElementById('kvEWheel').textContent = 'Çark: ' + (eScore|0) + '/30';
+    }catch(e){}
+  }
+  // Hook kvUpd if exists
+  if (typeof kvUpd === 'function'){
+    const __kvUpd = kvUpd;
+    window.kvUpd = function(){ const r = __kvUpd(); updWheelBadges(); return r; };
+  } else {
+    // fallback: tick after DOM ready
+    document.addEventListener('DOMContentLoaded', updWheelBadges);
+  }
+  // Manual trigger
+  document.addEventListener('DOMContentLoaded', function(){
+    const btn = document.getElementById('kvWheelTest');
+    if(btn){
+      btn.addEventListener('click', function(){
+        const who = (typeof kvTurn!=='undefined' && kvTurn==='E') ? 'Erkek' : 'Kadın';
+        if (typeof rewardNow === 'function') rewardNow(who);
+      });
+    }
+  });
+})();
+</script>
+
+
+<script>
+// --- injected: çark akışı garantisi (30 puan -> çark -> kategori -> görev) ---
+(function(){
+  // 1) startCountdown garanti: bittiğinde görev penceresini aç
+  if (typeof startCountdown === 'function') {
+    const __startCountdown = startCountdown;
+    window.startCountdown = function(picked){
+      // picked: {ci, ti, t, catName}
+      const res = __startCountdown(picked);
+      // Ek güvence: 5.2 sn sonra (geri sayım biter bitmez) görevi aç
+      try {
+        setTimeout(function(){
+          if (typeof openReward === 'function') {
+            openReward(window.wheelWho || 'Kadın', picked);
+          }
+        }, 5200);
+      } catch(e){}
+      return res;
+    };
+  }
+
+  // 2) 30 puan eşiği: her onChoose sonrası kontrol (ek güvence)
+  if (typeof onChoose === 'function'){
+    const __onChoose = onChoose;
+    window.onChoose = function(i){
+      __onChoose(i);
+      try {
+        const ks = (typeof kScore!=='undefined') ? kScore : 0;
+        const es = (typeof eScore!=='undefined') ? eScore : 0;
+        if (ks >= 30 || es >= 30) {
+          const who = ks >= 30 ? 'Kadın' : 'Erkek';
+          if (typeof rewardNow === 'function') rewardNow(who);
+        }
+      } catch(e){}
+    };
+  }
+})();
+</script>
+
+
+<script>
+// --- injected: Yeni Oyun tam sıfırlama + tekrar etmeyen sorular (deck) ---
+(function(){
+  // 0) helper: shuffle
+  function shuffle(a){
+    for(let i=a.length-1;i>0;i--){ const j=(Math.random()* (i+1))|0; [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+  }
+
+  // 1) Soru tekrarsız: pickQuestion() sarmalayıp "deck" kullan
+  if (typeof pickQuestion === 'function'){
+    const __pickQuestion = pickQuestion;
+    // Hazır bir deck varsa oradan çek; yoksa yeni karıştırılmış deck hazırla
+    window.kvDeck = Array.isArray(window.kvDeck) ? window.kvDeck : null;
+    window.kvDeckPos = typeof window.kvDeckPos==='number' ? window.kvDeckPos : 0;
+    window.pickQuestion = function(){
+      try{
+        const N = (window.QUESTION_BANK && Array.isArray(window.QUESTION_BANK.items)) ? window.QUESTION_BANK.items.length : 0;
+        if(!window.kvDeck || window.kvDeck.length !== N){
+          window.kvDeck = shuffle(Array.from({length:N},(_,i)=>i));
+          window.kvDeckPos = 0;
+        }
+        if(window.kvDeckPos >= window.kvDeck.length){
+          // tüm sorular bitti; yeniden karıştır (veya "bitti" mesajı gösterilebilir)
+          window.kvDeck = shuffle(window.kvDeck);
+          window.kvDeckPos = 0;
+        }
+        const idx = window.kvDeck[window.kvDeckPos++];
+        const q = window.QUESTION_BANK.items[idx];
+        return q;
+      }catch(e){
+        // sorun olursa eski davranışa dön
+        return __pickQuestion();
+      }
+    };
+  }
+
+  // 2) Yeni Oyun: her şeyi sıfırla
+  function kvResetGame(){
+    try{
+      // Skor ve çark sayaçları
+      if(typeof kScore!=='undefined') kScore = 0;
+      if(typeof eScore!=='undefined') eScore = 0;
+      if(typeof kCnt!=='undefined') kCnt = 0;
+      if(typeof eCnt!=='undefined') eCnt = 0;
+      if(typeof kvTurn!=='undefined') kvTurn = 'K';
+
+      // Ekranı güncelle (varsa)
+      if(typeof kvUpd==='function') kvUpd();
+
+      // Soru destesi sıfırla
+      window.kvDeck = null;
+      window.kvDeckPos = 0;
+
+      // 2 oyuncu D/Y çizelgesi
+      try{
+        const zero = {"K":{"d":0,"y":0},"E":{"d":0,"y":0},"log":[]};
+        localStorage.setItem('kv_stats_v1', JSON.stringify(zero));
+      }catch(e){}
+      if(typeof kvResetStats==='function') kvResetStats();
+
+      // Çark dialogu kapalı olsun
+      try{ document.getElementById('rewardDlg')?.close(); }catch(e){}
+
+      // Bir sonraki soruyu getir
+      if(typeof kvNext==='function') kvNext();
+    }catch(e){ console.warn('kvResetGame error', e); }
+  }
+
+  // 3) "Yeni Oyun" butonuna bağla (id varsa öncelikli)
+  function bindNewGame(){
+    let btn = document.getElementById('kvNewGame') 
+           || document.querySelector('button#kvNewGame');
+    if(!btn){
+      // fallback: metin ile ara
+      const cand = Array.from(document.querySelectorAll('button')).find(b => (b.textContent||'').trim().toLowerCase().includes('yeni oyun'));
+      if(cand) btn = cand;
+    }
+    if(btn && !btn.__kvBind){
+      btn.__kvBind = true;
+      btn.addEventListener('click', function(e){
+        e.preventDefault();
+        kvResetGame();
+      });
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', bindNewGame);
+})();
+</script>
+
+
+<script>
+// --- injected: Yeni Oyun tam sıfır + skorlu geçmiş (±10/±20) ---
+(function(){
+  const LSKEY = 'kv_stats_v1';
+
+  // migrate or init stats object
+  function loadStats(){
+    let s;
+    try{ s = JSON.parse(localStorage.getItem(LSKEY)||'null'); }catch(e){ s=null; }
+    if(!s || typeof s!=='object') s = {"K":{"d":0,"y":0,"s":0},"E":{"d":0,"y":0,"s":0},"log":[]};
+    if(!s.K) s.K={"d":0,"y":0,"s":0};
+    if(!s.E) s.E={"d":0,"y":0,"s":0};
+    if(typeof s.K.s!=='number') s.K.s=0;
+    if(typeof s.E.s!=='number') s.E.s=0;
+    if(!Array.isArray(s.log)) s.log=[];
+    return s;
+  }
+  function saveStats(S){ try{ localStorage.setItem(LSKEY, JSON.stringify(S)); }catch(e){} }
+
+  const S = loadStats();
+  const el = (id)=>document.getElementById(id);
+
+  function renderBoard(){
+    // pills already show D/Y counts; we add scoreboard in the "Soru Geçmişi" başlığı altına
+    try{
+      el('kvKDogru').textContent = S.K.d;
+      el('kvKYanlis').textContent = S.K.y;
+      el('kvEDogru').textContent = S.E.d;
+      el('kvEYanlis').textContent = S.E.y;
+    }catch(e){}
+    const log = el('kvLog'); if(!log) return;
+    const header = `<div style="margin-bottom:6px">
+        <b>Skor</b> — Kadın: <span class="kv-pill">${S.K.s}</span> • Erkek: <span class="kv-pill">${S.E.s}</span>
+      </div>`;
+    log.innerHTML = header + S.log.slice(-80).map(item=>{
+      const who = item.turn==='K' ? 'Kadın' : 'Erkek';
+      const sign = item.delta>0 ? '+' : '';
+      const cls = item.delta>0 ? 'kv-ok' : 'kv-no';
+      const stem = (item.stem||'').replace(/</g,'&lt;').slice(0,90);
+      return `<div><span class="${cls}">${sign}${item.delta}</span> <b>${who}</b> — ${item.type||'Soru'} — ${stem}</div>`;
+    }).join('');
+  }
+
+  // expose reset helper
+  window.kvResetStats = function(){ S.K={d:0,y:0,s:0}; S.E={d:0,y:0,s:0}; S.log=[]; saveStats(S); renderBoard(); };
+
+  // --- Wrap renderQuestion to keep current stem ---
+  if (typeof renderQuestion === 'function'){
+    const __renderQuestion = renderQuestion;
+    window.renderQuestion = function(q){ window.kvCurrentQ = q; return __renderQuestion(q); };
+  }
+
+  // --- Hook onChoose for kelime avı: doğru=+10, yanlış=-10 ---
+  if (typeof onChoose === 'function'){
+    const __onChoose = onChoose;
+    window.onChoose = function(i){
+      const turn = (typeof kvTurn!=='undefined') ? kvTurn : 'K';
+      const wasCorrect = (typeof currentCorrect!=='undefined') ? (i===currentCorrect) : false;
+      __onChoose(i); // original updates (puan barları, çark eşiği vs.)
+      const delta = wasCorrect ? +10 : -10;
+      if (turn==='K'){
+        if(wasCorrect) S.K.d++; else S.K.y++;
+        S.K.s += delta;
+      } else {
+        if(wasCorrect) S.E.d++; else S.E.y++;
+        S.E.s += delta;
+      }
+      S.log.push({turn:turn, delta:delta, type:'Kelime Avı', stem:(window.kvCurrentQ && window.kvCurrentQ.stem)||null});
+      saveStats(S); renderBoard();
+    };
+  }
+
+  // --- Hook reward buttons: Tamamlandı=+20, Pas=-20 ---
+  document.addEventListener('DOMContentLoaded', function(){
+    const btnDone = document.getElementById('rewardDone');
+    const btnSkip = document.getElementById('rewardSkip');
+    function addReward(delta, type){
+      const turn = (typeof window.wheelWho==='string' && (window.wheelWho==='Kadın'||window.wheelWho==='Erkek'))
+                    ? (window.wheelWho==='Kadın'?'K':'E')
+                    : ((typeof kvTurn!=='undefined' && kvTurn==='E') ? 'E':'K');
+      if (turn==='K') S.K.s += delta; else S.E.s += delta;
+      S.log.push({turn:turn, delta:delta, type:type, stem:(window.rewardCurrentTask && window.rewardCurrentTask.t && window.rewardCurrentTask.t.title)||'Görev'});
+      saveStats(S); renderBoard();
+    }
+    if(btnDone && !btnDone.__kvPatch){
+      btnDone.__kvPatch = true;
+      btnDone.addEventListener('click', function(){ addReward(+20, 'Özel Görev (Tamamlandı)'); });
+    }
+    if(btnSkip && !btnSkip.__kvPatch){
+      btnSkip.__kvPatch = true;
+      btnSkip.addEventListener('click', function(){ addReward(-20, 'Özel Görev (Pas)'); });
+    }
+  });
+
+  // --- Yeni Oyun: KEY_DONE dahil tam sıfırla ve ekranı yenile ---
+  function kvResetGameFull(){
+    try{
+      // 1) tamamlanan görev setini temizle
+      try{ localStorage.setItem('kv_done_v1','[]'); }catch(e){}
+      // farklı anahtar adı kullanılıyorsa (KEY_DONE) onu da sil
+      try{
+        // naive: clear all keys that look like *_done*
+        for(let i=0;i<localStorage.length;i++){
+          const k = localStorage.key(i);
+          if(/done/i.test(k)) localStorage.setItem(k,'[]');
+        }
+      }catch(e){}
+      // 2) skor/turn/sayaçlar
+      if(typeof kScore!=='undefined') kScore = 0;
+      if(typeof eScore!=='undefined') eScore = 0;
+      if(typeof kCnt!=='undefined') kCnt = 0;
+      if(typeof eCnt!=='undefined') eCnt = 0;
+      if(typeof kvTurn!=='undefined') kvTurn = 'K';
+      if(typeof kvTimer!=='undefined' && kvTimer){ clearInterval(kvTimer); kvTimer=null; }
+      // 3) deck
+      window.kvDeck = null; window.kvDeckPos = 0;
+      // 4) log & DY & skor
+      S.K={d:0,y:0,s:0}; S.E={d:0,y:0,s:0}; S.log=[]; saveStats(S);
+      // 5) UI refresh: render all category task lists & top bars
+      try{
+        const dataLen = (function(){ try{ return (load()||[]).length; } catch(e){ return 0; } })();
+        for(let ci=0; ci<dataLen; ci++){ try{ renderTasks(ci); }catch(e){} }
+      }catch(e){}
+      if(typeof kvUpd==='function') kvUpd();
+      // 6) çark/görev dialogları kapansın
+      try{ document.getElementById('rewardDlg')?.close(); }catch(e){}
+      try{ document.getElementById('wheelDlg')?.close(); }catch(e){}
+      // 7) yeni soru
+      if(typeof kvNext==='function') kvNext();
+      renderBoard();
+    }catch(e){ console.warn('kvResetGameFull error', e); }
+  }
+
+  // bağla: var olan "Yeni Oyun" butonu
+  document.addEventListener('DOMContentLoaded', function(){
+    let btn = document.getElementById('btnNewGame') || document.getElementById('kvNewGame');
+    if(!btn){
+      btn = Array.from(document.querySelectorAll('button')).find(b => (b.textContent||'').trim().toLowerCase().includes('yeni oyun'));
+    }
+    if(btn && !btn.__kvFull){
+      btn.__kvFull = true;
+      btn.addEventListener('click', function(e){ e.preventDefault(); kvResetGameFull(); });
+    }
+  });
+
+  // ilk çizim
+  document.addEventListener('DOMContentLoaded', renderBoard);
+})();
+</script>
+
+
+<script>
+// --- injected: 'Tamamlananları Sıfırla' düğmesi onarımı ---
+(function(){
+  function clearDoneKeys(){
+    try{
+      // Bilinen anahtar
+      localStorage.setItem('kv_done_v1','[]');
+      // Olası varyasyonlar: done listelerini boşalt
+      for(let i=0;i<localStorage.length;i++){
+        const k = localStorage.key(i);
+        if(/done/i.test(k)) try{ localStorage.setItem(k,'[]'); }catch(e){}
+      }
+    }catch(e){}
+  }
+  function refreshAllTaskLists(){
+    try{
+      // renderTasks(ci) için kategori sayısını tahmin et
+      let totalCats = 0;
+      try{ totalCats = (load()||[]).length; }catch(e){ totalCats = 0; }
+      for(let ci=0; ci<totalCats; ci++){ try{ renderTasks(ci); }catch(e){} }
+    }catch(e){}
+  }
+  function bindResetDone(){
+    // Önce id ile deneyelim
+    let btn = document.getElementById('btnResetDone');
+    if(!btn){
+      // metne göre eşleşme
+      btn = Array.from(document.querySelectorAll('button')).find(b => (b.textContent||'').trim().toLowerCase().includes('tamamlananları sıfırla'));
+    }
+    if(btn && !btn.__kvBind){
+      btn.__kvBind = true;
+      btn.addEventListener('click', function(e){
+        e.preventDefault();
+        clearDoneKeys();
+        refreshAllTaskLists();
+      });
+    }
+  }
+  document.addEventListener('DOMContentLoaded', bindResetDone);
+})();
+</script>
+
+
+<script>
+// --- injected: Özel görev skorunu doğru oyuncuya yaz (performer-binding) ---
+(function(){
+  // 1) Yakala: çark/görev açılırken görev oyuncusunu kilitle
+  if (typeof rewardNow === 'function'){
+    const __rewardNow = rewardNow;
+    window.rewardNow = function(who){
+      // who: 'Kadın' | 'Erkek'
+      window.kvRewardPlayer = (who==='Erkek' ? 'E' : 'K');
+      return __rewardNow(who);
+    };
+  }
+  if (typeof openReward === 'function'){
+    const __openReward = openReward;
+    window.openReward = function(who, picked){
+      // who: 'Kadın' | 'Erkek'  (ek güvence)
+      window.kvRewardPlayer = (who==='Erkek' ? 'E' : 'K');
+      // picked.t -> görevin objesi ise saklayalım (log için)
+      try { window.rewardCurrentTask = picked; } catch(e){}
+      return __openReward(who, picked);
+    };
+  }
+
+  // 2) Skor güncellemesini hep kilitli oyuncuya yaz
+  document.addEventListener('DOMContentLoaded', function(){
+    const btnDone = document.getElementById('rewardDone');
+    const btnSkip = document.getElementById('rewardSkip');
+    function addReward(delta, type){
+      try{
+        const S = JSON.parse(localStorage.getItem('kv_stats_v1')||'{"K":{"d":0,"y":0,"s":0},"E":{"d":0,"y":0,"s":0},"log":[]}');
+        const turn = window.kvRewardPlayer || (window.wheelWho==='Erkek'?'E':'K');
+        if (turn==='K') S.K.s += delta; else S.E.s += delta;
+        const stem = (window.rewardCurrentTask && window.rewardCurrentTask.t && window.rewardCurrentTask.t.title) || 'Görev';
+        S.log.push({turn:turn, delta:delta, type:type, stem:stem});
+        localStorage.setItem('kv_stats_v1', JSON.stringify(S));
+        // ekranda da güncelle
+        try{
+          document.getElementById('kvLog').dispatchEvent(new Event('kv-render'));
+        }catch(e){}
+      }catch(e){}
+    }
+    if(btnDone && !btnDone.__kvBind2){
+      btnDone.__kvBind2 = true;
+      btnDone.addEventListener('click', function(){ addReward(+20, 'Özel Görev (Tamamlandı)'); });
+    }
+    if(btnSkip && !btnSkip.__kvBind2){
+      btnSkip.__kvBind2 = true;
+      btnSkip.addEventListener('click', function(){ addReward(-20, 'Özel Görev (Pas)'); });
+    }
+  });
+
+  // 3) kvLog yeniden çizimi için küçük event tetikleyici
+  document.addEventListener('DOMContentLoaded', function(){
+    const log = document.getElementById('kvLog');
+    if(!log) return;
+    log.addEventListener('kv-render', function(){
+      try{
+        const S = JSON.parse(localStorage.getItem('kv_stats_v1')||'{"K":{"d":0,"y":0,"s":0},"E":{"d":0,"y":0,"s":0},"log":[]}');
+        const header = `<div style="margin-bottom:6px">
+            <b>Skor</b> — Kadın: <span class="kv-pill">${S.K.s||0}</span> • Erkek: <span class="kv-pill">${S.E.s||0}</span>
+          </div>`;
+        log.innerHTML = header + (S.log||[]).slice(-80).map(item=>{
+          const who = item.turn==='K' ? 'Kadın' : 'Erkek';
+          const sign = item.delta>0 ? '+' : '';
+          const cls = item.delta>0 ? 'kv-ok' : 'kv-no';
+          const stem = (item.stem||'').replace(/</g,'&lt;').slice(0,90);
+          return `<div><span class="${cls}">${sign}${item.delta}</span> <b>${who}</b> — ${item.type||'Soru'} — ${stem}</div>`;
+        }).join('');
+        // üstteki küçük pill'leri de güncelle
+        const kd = document.getElementById('kvKDogru'); if(kd) kd.textContent = S.K.d||0;
+        const ky = document.getElementById('kvKYanlis'); if(ky) ky.textContent = S.K.y||0;
+        const ed = document.getElementById('kvEDogru'); if(ed) ed.textContent = S.E.d||0;
+        const ey = document.getElementById('kvEYanlis'); if(ey) ey.textContent = S.E.y||0;
+      }catch(e){}
+    });
+  });
+})();
+</script>
+
+
+<script>
+// --- injected: Çark tetikleyicide doğru oyuncu (pre-turn) ---
+(function(){
+  if (typeof onChoose === 'function'){
+    const __onChoose_orig = onChoose;
+    window.onChoose = function(i){
+      // capture BEFORE original toggles turn/score resets
+      const preTurn = (typeof kvTurn!=='undefined') ? kvTurn : 'K'; // 'K'|'E'
+      const preK = (typeof kScore!=='undefined') ? kScore : 0;
+      const preE = (typeof eScore!=='undefined') ? eScore : 0;
+
+      __onChoose_orig(i); // this may flip turn
+
+      try{
+        // avoid double open
+        if (window.__kvWheelPending) return;
+        // did someone reach threshold? determine by pre-turn owner
+        const reached = (preTurn==='K') ? ((typeof kScore!=='undefined') && kScore>=30)
+                                        : ((typeof eScore!=='undefined') && eScore>=30);
+        if (reached && typeof rewardNow==='function'){
+          window.__kvWheelPending = true;
+          const who = (preTurn==='K') ? 'Kadın' : 'Erkek';
+          rewardNow(who);
+          // clear flag shortly after open
+          setTimeout(() => { window.__kvWheelPending = false; }, 1000);
+        }
+      }catch(e){}
+    };
+  }
+})();
+</script>
+
+
+
+<script>
+(function(){
+  const KEY='mobiroller_categories_v2_tasks_v41';
+  const KEY_DONE='mobiroller_tasks_done_ids_v41';
+  const LS_STATS='kv_stats_v1';
+
+  const LVL_COLORS = {
+    "Hafif": getComputedStyle(document.documentElement).getPropertyValue('--lvl-hafif') || '#6ee7b7',
+    "Orta":  getComputedStyle(document.documentElement).getPropertyValue('--lvl-orta') || '#ffd166',
+    "Sıcak": getComputedStyle(document.documentElement).getPropertyValue('--lvl-sicak') || '#ff6a00',
+    "Alev Alev": getComputedStyle(document.documentElement).getPropertyValue('--lvl-alev') || '#ff1744'
+  };
+
+  // Ensure defaults includes .level
+  if (typeof window.ensureDefaults === 'function'){
+    const __ensure = window.ensureDefaults;
+    window.ensureDefaults = function(c){
+      c = __ensure(c);
+      if(typeof c.level!=='string'){ c.level = 'Hafif'; }
+      return c;
+    };
+  }
+
+  // Render: add level selector + badge; add spicy checkbox & badge to tasks
+  if (typeof window.render === 'function'){
+    const __render = window.render;
+    window.render = function(){
+      __render();
+      try{
+        const data = (typeof load==='function') ? load().map(ensureDefaults) : [];
+        data.forEach((cat,ci)=>{
+          const root = document.querySelector(`#task-list-${ci}`)?.closest('.item'); if(!root) return;
+          if(!root.querySelector('.cat-level')){
+            const header = root.querySelector('.item-header .row');
+            const wrap = document.createElement('div'); wrap.className='row cat-level'; wrap.style.gap='6px';
+            const sel = document.createElement('select'); sel.innerHTML = '<option>Hafif</option><option>Orta</option><option>Sıcak</option><option>Alev Alev</option>'; sel.value=cat.level||'Hafif';
+            const badge = document.createElement('span'); badge.className='lvl-badge';
+            const dot = document.createElement('span'); dot.className='lvl-dot'; dot.style.background=LVL_COLORS[sel.value]||'#ffd166';
+            const label = document.createElement('span'); label.textContent='Cesaret: ';
+            const strong = document.createElement('b'); strong.textContent = sel.value;
+            badge.append(dot,label,strong);
+            sel.onchange = function(){
+              const d = load().map(ensureDefaults); d[ci].level = sel.value; save(d);
+              dot.style.background = LVL_COLORS[sel.value]||'#ffd166'; strong.textContent = sel.value;
+            };
+            if(header){ header.appendChild(sel); const right = root.querySelector('.item-header > .row:last-child'); if(right) right.prepend(badge); }
+          }
+        });
+      }catch(e){}
+    };
+  }
+
+  // Spicy flag
+  document.addEventListener('DOMContentLoaded', function(){
+    const __renderTasks = window.renderTasks;
+    if(typeof __renderTasks === 'function' && !window.__kvSpicy){
+      window.__kvSpicy = true;
+      window.renderTasks = function(ci){
+        __renderTasks(ci);
+        const li = document.querySelector('#task-list-'+ci)?.closest('.item'); if(!li) return;
+        const form = li.querySelector('.task-form .task-actions');
+        if(form && !li.querySelector('.t-spicy')){
+          const label = document.createElement('label'); label.style.display='inline-flex'; label.style.alignItems='center'; label.style.gap='6px';
+          const cb = document.createElement('input'); cb.type='checkbox'; cb.className='t-spicy';
+          const span = document.createElement('span'); span.textContent='Ateşli (titreşim)';
+          label.append(cb,span); form.prepend(label);
+          const addBtn = form.querySelector('.t-add');
+          if(addBtn && !addBtn.__kvHook){ addBtn.__kvHook=true;
+            addBtn.addEventListener('click', function(){
+              setTimeout(function(){
+                const d = load().map(ensureDefaults); const cat=d[ci]; if(!cat||!cat.tasks||!cat.tasks.length) return;
+                const t = cat.tasks[cat.tasks.length-1]; t.spicy = !!cb.checked; save(d); cb.checked=false; window.renderTasks(ci);
+              },0);
+            });
+          }
+        }
+        // badge on rows
+        const d = load().map(ensureDefaults); const cat = d[ci];
+        li.querySelectorAll('.task-row').forEach((row)=>{
+          const delBtn = row.querySelector('.del[data-ti]'); const ti = delBtn?parseInt(delBtn.getAttribute('data-ti')||'0',10):0;
+          const t = (cat && cat.tasks && cat.tasks[ti])?cat.tasks[ti]:null; if(!t) return;
+          if(t.spicy && !row.querySelector('.spicy-badge')){
+            const b = document.createElement('span'); b.className='spicy-badge pill'; b.textContent='🔥 Ateşli'; b.style.marginLeft='8px';
+            const title = row.querySelector('.task-title'); if(title) title.appendChild(b);
+          }
+        });
+      };
+    }
+  });
+
+  // Reward open fire effect for spicy tasks
+  if (typeof window.openReward === 'function'){
+    const __openReward = window.openReward;
+    window.openReward = function(who, picked){
+      const res = __openReward(who, picked);
+      try{
+        const t = (picked && picked.t) ? picked.t : (window.rewardCurrentTask && window.rewardCurrentTask.t);
+        if(t && t.spicy){ const dlg=document.getElementById('rewardDlg')||document.body; dlg.classList.add('flame-shake'); setTimeout(()=>dlg.classList.remove('flame-shake'),1200); }
+      }catch(e){}
+      return res;
+    };
+  }
+
+  // Wheel recolor by level
+  if (typeof window.buildWheel === 'function'){
+    const __build = window.buildWheel;
+    window.buildWheel = function(){ __build(); try{
+      const d = load().map(ensureDefaults), done=loadDone(); 
+      if(getSeq()){
+        let idx=-1; for(let ci=0;ci<d.length;ci++){ if((d[ci].tasks||[]).some(t=>!done.has(t.id))){ idx=ci; break; } }
+        window.wheelCats = (idx>=0)?[{name:d[idx].name, ci:idx, level:d[idx].level||'Hafif'}]:[];
+      }else{
+        window.wheelCats = d.map((c,ci)=>({name:c.name, ci, level:c.level||'Hafif'})).filter(x=>(d[x.ci].tasks||[]).some(t=>!done.has(t.id)));
+      }
+    }catch(e){} };
+  }
+  if (typeof window.drawWheel === 'function'){
+    const __draw = window.drawWheel;
+    window.drawWheel = function(){ try{
+      const ctx=wheelCanvas.getContext('2d'), N=Math.max(1,(window.wheelCats||[]).length), R=wheelCanvas.width/2, slice=(Math.PI*2)/N, cx=R, cy=R;
+      ctx.clearRect(0,0,wheelCanvas.width,wheelCanvas.height); ctx.save(); ctx.translate(cx,cy); ctx.rotate(window.wheelAngle||0);
+      for(let i=0;i<N;i++){ const cat=window.wheelCats[i]; const color=LVL_COLORS[cat?.level||'Hafif']||'#ffd166';
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,R,i*slice,(i+1)*slice); ctx.closePath(); ctx.fillStyle=color; ctx.globalAlpha=.88; ctx.fill();
+        ctx.lineWidth=2; ctx.strokeStyle='#0b0c10'; ctx.globalAlpha=1; ctx.stroke();
+        ctx.save(); const mid=i*slice+slice/2; ctx.rotate(mid); ctx.textAlign='right'; ctx.fillStyle='#100a0d'; ctx.font='bold 14px system-ui'; ctx.fillText(cat?.name||'—', R-10,0); ctx.restore();
+      } ctx.restore(); ctx.beginPath(); ctx.moveTo(cx,6); ctx.lineTo(cx-8,20); ctx.lineTo(cx+8,20); ctx.closePath(); ctx.fillStyle='#ff6a00'; ctx.fill();
+    }catch(e){ __draw(); } };
+  }
+
+  // ---- Minimal Import/Export (CATEGORIES ONLY) ----
+  function loadCats(){ try{ const d=JSON.parse(localStorage.getItem(KEY)||'[]'); return Array.isArray(d)?d:[]; }catch(e){ return []; } }
+  function saveCats(arr){ localStorage.setItem(KEY, JSON.stringify(arr||[])); }
+  function hardReset(){
+    try{ localStorage.setItem(KEY_DONE,'[]'); }catch(e){}
+    try{ localStorage.setItem(LS_STATS, JSON.stringify({"K":{"d":0,"y":0,"s":0},"E":{"d":0,"y":0,"s":0},"log":[]})); }catch(e){}
+    try{ window.kvResetStats && window.kvResetStats(); }catch(e){}
+    if(typeof window.kScore!=='undefined') window.kScore=0;
+    if(typeof window.eScore!=='undefined') window.eScore=0;
+    if(typeof window.kvTurn!=='undefined') window.kvTurn='K';
+    if(typeof window.kvTimer!=='undefined' && window.kvTimer){ clearInterval(window.kvTimer); window.kvTimer=null; }
+    const t=document.getElementById('kvTimer'); if(t) t.textContent='30';
+    window.kvDeck=null; window.kvDeckPos=0;
+    try{ document.getElementById('rewardDlg')?.close(); }catch(e){}; try{ document.getElementById('wheelDlg')?.close(); }catch(e){};
+    if(typeof window.render==='function') window.render();
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    // Export (JSON only)
+    const bx=document.getElementById('btnExportTasks'); if(bx && !bx.__kv){ bx.__kv=true; bx.addEventListener('click', function(){
+      const payload = { version:'v2.41', exportedAt:new Date().toISOString(), categories: loadCats() };
+      const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='gorev-timer-CATEGORIES.json';
+      document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},800);
+    });}
+
+    // Import (JSON only) — overwrites categories, clears done/stats
+    const bi=document.getElementById('btnImportTasks'); const input=document.getElementById('importTasksInput');
+    if(bi && input && !bi.__kv){ bi.__kv=true; bi.addEventListener('click', ()=> input.click()); input.addEventListener('change', async function(ev){
+      const f = ev.target.files && ev.target.files[0]; if(!f) return;
+      try{
+        const txt = await f.text(); const obj = JSON.parse(txt);
+        const cats = Array.isArray(obj)?obj : (Array.isArray(obj.categories)?obj.categories:[]);
+        if(!cats.length){ alert('Geçerli kategori verisi bulunamadı.'); ev.target.value=''; return; }
+        saveCats(cats); hardReset(); (window.showToast||alert)('Görevler içe aktarıldı. Oyun sıfırlandı.');
+      }catch(e){ alert('JSON okunamadı: ' + (e && e.message || 'bilinmeyen hata')); }
+      finally{ ev.target.value=''; }
+    });}
+
+    // New Game: hard reset (ensures done cleared)
+    const btnNG = document.getElementById('btnNewGame');
+    if(btnNG && !btnNG.__kvHard){
+      btnNG.__kvHard=true;
+      btnNG.addEventListener('click', function(ev){
+        // let original run, then enforce hard reset
+        setTimeout(hardReset, 0);
+      }, true);
+    }
+  });
+})();
+</script>
+<!-- === /APP ADDONS === -->
+tml&gt;
+</body></html>
